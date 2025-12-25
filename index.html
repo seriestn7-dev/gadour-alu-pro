@@ -22,14 +22,11 @@
                 <h1 style="color:#004085; margin:0; font-size: 32px;">Gadour Alu 🏗️</h1>
                 <p style="color:#888; margin:5px 0 0 0; font-size: 14px;">Application Pro pour Menuiserie</p>
             </div>
-
             <div id="errorMsg" class="error-msg"></div>
-
             <button id="googleBtn" onclick="loginWithGoogle()" class="btn-google-pro">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="24">
                 <span>Continuer avec Google</span>
             </button>
-
             <p style="margin-top: 40px; font-size: 11px; color: #aaa; line-height: 1.6;">
                 <span style="color:#28a745;">✔</span> Accès Sécurisé<br>
                 <span style="color:#28a745;">✔</span> Sauvegarde Automatique<br>
@@ -37,12 +34,11 @@
             </p>
         </div>
     </div>
-   <div id="welcomePopup" class="popup-overlay" style="display: none;">
+
+    <div id="welcomePopup" class="popup-overlay" style="display: none;">
         <div class="popup-box" dir="rtl">
             <span class="close-btn" onclick="closeWelcomePopup()" style="float:left;">×</span>
-            
             <h2 style="color: #004085; margin-top: 0;">مرحباً بيك في Gadour Pro Alu 👋</h2>
-            
             <p style="color: #555; font-size: 16px; line-height: 1.8;">
                 التطبيق هذا تخدم باش يرتّحك من تكسير الراس: <br>
                 ✅ يحسبلك <b>البروفيلي (Profilé)</b> والزجاج والسلعة. <br>
@@ -50,12 +46,10 @@
                 ✅ يخرجلك الفصالة الصحيحة باش ما طيحش الشوت (Chute). <br>
                 ✅ يخدم الفاتورات (Facture) بضغطة زر.
             </p>
-
             <div style="background-color: #fff3cd; padding: 10px; border-radius: 8px; border: 1px dashed #e67e22; margin: 15px 0;">
                 <strong style="color: #d35400;">⚠️ ملاحظة مهمة:</strong><br>
                 قبل ما تبدأ تحسب، بربي ثبّت في <b>"الأسوام"</b> (Prix) باش الحساب يطلع صحيح 100%.
             </div>
-
             <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
                 <button onclick="goToPricesAndClose()" class="btn-popup-action">⚙️ ريڨل الأسوام</button>
                 <button onclick="closeWelcomePopup()" class="btn-popup-ok">واضح، توكلنا على الله</button>
@@ -63,17 +57,6 @@
         </div>
     </div>
 
-            <div style="background-color: #fff3cd; padding: 10px; border-radius: 8px; border: 1px dashed #e67e22; margin: 15px 0;">
-                <strong style="color: #d35400;">⚠️ ملاحظة مهمة:</strong><br>
-                قبل ما تبدأ تحسب، بربي ثبّت في <b>"الأسوام"</b> (Prix) باش الحساب يطلع صحيح 100%.
-            </div>
-
-            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                <button onclick="goToPricesAndClose()" class="btn-popup-action">⚙️ ريڨل الأسوام</button>
-                <button onclick="closeWelcomePopup()" class="btn-popup-ok">واضح، توكلنا على الله</button>
-            </div>
-        </div>
-    </div>
     <div id="app-screen">
         <div class="navbar no-print">
             <button class="nav-btn active" onclick="switchMode('calc')">📐 Calcul</button>
@@ -105,7 +88,6 @@
                     </div>
                     <div><label>Largeur (L):</label><input type="number" id="largeur" value="120" step="0.1"></div>
                     <div><label>Hauteur (H):</label><input type="number" id="hauteur" value="120" step="0.1"></div>
-                    
                     <div>
                         <label>Couleur:</label>
                         <select id="couleur">
@@ -195,4 +177,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
