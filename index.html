@@ -37,19 +37,31 @@
             </p>
         </div>
     </div>
-    <div id="welcomePopup" class="popup-overlay" style="display: none;">
+   <div id="welcomePopup" class="popup-overlay" style="display: none;">
         <div class="popup-box" dir="rtl">
             <span class="close-btn" onclick="closeWelcomePopup()" style="float:left;">×</span>
             
             <h2 style="color: #004085; margin-top: 0;">مرحباً بيك في Gadour Pro Alu 👋</h2>
             
             <p style="color: #555; font-size: 16px; line-height: 1.8;">
-                التطبيق هذا تخدملك باش يرتّحك من تكسير الراس: <br>
-                ✅ يحسبلك السلعة والملف والزجاج. <br>
+                التطبيق هذا تخدم باش يرتّحك من تكسير الراس: <br>
+                ✅ يحسبلك <b>البروفيلي (Profilé)</b> والزجاج والسلعة. <br>
                 ✅ يعطيك سوم الدوفي (Devis) حاضر. <br>
                 ✅ يخرجلك الفصالة الصحيحة باش ما طيحش الشوت (Chute). <br>
                 ✅ يخدم الفاتورات (Facture) بضغطة زر.
             </p>
+
+            <div style="background-color: #fff3cd; padding: 10px; border-radius: 8px; border: 1px dashed #e67e22; margin: 15px 0;">
+                <strong style="color: #d35400;">⚠️ ملاحظة مهمة:</strong><br>
+                قبل ما تبدأ تحسب، بربي ثبّت في <b>"الأسوام"</b> (Prix) باش الحساب يطلع صحيح 100%.
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                <button onclick="goToPricesAndClose()" class="btn-popup-action">⚙️ ريڨل الأسوام</button>
+                <button onclick="closeWelcomePopup()" class="btn-popup-ok">واضح، توكلنا على الله</button>
+            </div>
+        </div>
+    </div>
 
             <div style="background-color: #fff3cd; padding: 10px; border-radius: 8px; border: 1px dashed #e67e22; margin: 15px 0;">
                 <strong style="color: #d35400;">⚠️ ملاحظة مهمة:</strong><br>
@@ -183,3 +195,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
