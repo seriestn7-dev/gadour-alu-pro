@@ -590,3 +590,13 @@ function updateFactureTotal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => { loadPrices(); updateUI(); });
+/* --- GESTION POPUP MESSAGE --- */
+// Ki yodkhol l-site, nthal3ou l-Popup (Optionnel: tnajem tna7iha kan t7ebouch yatl3 dima)
+// document.addEventListener('DOMContentLoaded', () => {
+//    document.getElementById('infoPopup').style.display = 'flex';
+// });
+
+// Fonction bech tsaker l-Popup
+window.closePopup = function() {
+    document.getElementById('infoPopup').style.display = 'none';
+}
