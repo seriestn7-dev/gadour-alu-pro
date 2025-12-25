@@ -1,6 +1,8 @@
 // --- CONFIG & AUTH & ABONNEMENT ---
+// Hethi l-Config mta3ek (Matmesshech)
 const firebaseConfig = { apiKey: "AIzaSyBbxD-oDHcEzyXarmkykTfAclEaXeNidMA", authDomain: "gadour-pro-free.firebaseapp.com", projectId: "gadour-pro-free", storageBucket: "gadour-pro-free.firebasestorage.app", messagingSenderId: "301548307386", appId: "1:301548307386:web:2a694b5a38aee71dc41383" };
-let currentUser=null, db=null, isSubscribed=false;
+
+let currentUser = null, db = null, isSubscribed = false;
 
 try {
     firebase.initializeApp(firebaseConfig);
@@ -13,6 +15,14 @@ try {
             currentUser = user;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'block';
+
+            // --- GESTION POPUP ACCUEIL (ARABE) ---
+            // Nthabtou kanou deja chefouh fel session hethi
+            if (!sessionStorage.getItem('welcomeShown')) {
+                document.getElementById('welcomePopup').style.display = 'flex';
+                sessionStorage.setItem('welcomeShown', 'true'); 
+            }
+            // ------------------------------------
             
             // Check Subscription
             const cachedSub = localStorage.getItem('gadour_sub_' + user.uid);
@@ -42,8 +52,17 @@ window.loginWithGoogle = function() {
     .catch((error) => { alert("Erreur Google: " + error.message); });
 }
 
+/* --- FONCTIONS POPUP ARABE --- */
+window.closeWelcomePopup = function() {
+    document.getElementById('welcomePopup').style.display = 'none';
+}
 
-/* --- LOGIQUE METIER --- */
+window.goToPricesAndClose = function() {
+    closeWelcomePopup(); 
+    switchMode('prices'); 
+}
+
+/* --- LOGIQUE METIER (CORE) --- */
 
 function checkSubscription(isBackground = false) {
     if(!currentUser) return;
@@ -69,7 +88,7 @@ function updateSubUI(daysLeft, userName, startDate) {
 
 function enableApp(enabled) { document.getElementById('btnAdd').disabled = !enabled; document.getElementById('btnCalc').disabled = !enabled; document.getElementById('btnSave').disabled = !enabled; }
 
-// --- CORRECTIF CHARGEMENT (Nouvelle fonction) ---
+/* --- VERSION CORRIGÉE: LOAD HISTORY (Fix Blockage) --- */
 function loadHistory() {
     if(!isSubscribed) return;
     
@@ -83,23 +102,32 @@ function loadHistory() {
       .then((snap) => {
           div.innerHTML = ""; 
           let projects = [];
-          snap.forEach((doc) => { projects.push({ id: doc.id, ...doc.data() }); });
+          snap.forEach((doc) => {
+              projects.push({ id: doc.id, ...doc.data() });
+          });
 
-          // TRI EN JAVASCRIPT (Fix blocage)
+          // TRI MANUEL (JavaScript Sort)
           projects.sort((a, b) => {
               let dateA = a.date ? a.date.seconds : 0;
               let dateB = b.date ? b.date.seconds : 0;
               return dateB - dateA;
           });
 
-          if(projects.length === 0) { div.innerHTML = "<p style='text-align:center; color:#999;'>Aucun projet trouvé.</p>"; return; }
+          if(projects.length === 0) {
+              div.innerHTML = "<p style='text-align:center; color:#999;'>Aucun projet trouvé.</p>";
+              return;
+          }
 
           projects.forEach((d) => {
-              let dateStr = d.date ? new Date(d.date.seconds * 1000).toLocaleDateString('fr-FR') : "Date inconnue";
+              let dateStr = "Date inconnue";
+              if(d.date && d.date.seconds) {
+                  dateStr = new Date(d.date.seconds * 1000).toLocaleDateString('fr-FR');
+              }
+
               div.innerHTML += `
               <div class="history-card">
                   <div style="text-align:left;">
-                      <h4 style="margin:0; color:#004085; font-size:16px;">👤 ${d.client || "Client"}</h4>
+                      <h4 style="margin:0; color:#004085; font-size:16px;">👤 ${d.client || "Client Inconnu"}</h4>
                       <small style="color:#777; font-size:12px;">📅 ${dateStr} | ${d.items ? d.items.length : 0} éléments</small>
                   </div>
                   <div style="display:flex; gap:5px;">
@@ -111,7 +139,7 @@ function loadHistory() {
       })
       .catch((error) => {
           console.error("Erreur History:", error);
-          div.innerHTML = "<p style='color:red; text-align:center;'>Erreur connexion.</p>";
+          div.innerHTML = "<p style='color:red; text-align:center;'>Erreur: " + error.message + "</p>";
       });
 }
 
@@ -590,13 +618,3 @@ function updateFactureTotal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => { loadPrices(); updateUI(); });
-/* --- GESTION POPUP MESSAGE --- */
-// Ki yodkhol l-site, nthal3ou l-Popup (Optionnel: tnajem tna7iha kan t7ebouch yatl3 dima)
-// document.addEventListener('DOMContentLoaded', () => {
-//    document.getElementById('infoPopup').style.display = 'flex';
-// });
-
-// Fonction bech tsaker l-Popup
-window.closePopup = function() {
-    document.getElementById('infoPopup').style.display = 'none';
-}
