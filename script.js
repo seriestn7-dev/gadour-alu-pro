@@ -34,7 +34,7 @@ try {
 
 } catch (e) { console.error(e); }
 
-/* --- GOOGLE LOGIN ONLY (Clean) --- */
+/* --- GOOGLE LOGIN ONLY --- */
 window.loginWithGoogle = function() {
     var provider = new firebase.auth.GoogleAuthProvider();
     firebase.auth().signInWithPopup(provider)
@@ -43,7 +43,7 @@ window.loginWithGoogle = function() {
 }
 
 
-/* --- LOGIQUE METIER (ORIGINALE - INTACTE) --- */
+/* --- LOGIQUE METIER --- */
 
 function checkSubscription(isBackground = false) {
     if(!currentUser) return;
@@ -69,7 +69,52 @@ function updateSubUI(daysLeft, userName, startDate) {
 
 function enableApp(enabled) { document.getElementById('btnAdd').disabled = !enabled; document.getElementById('btnCalc').disabled = !enabled; document.getElementById('btnSave').disabled = !enabled; }
 
-function loadHistory() { if(!isSubscribed) return; db.collection("historique").where("uid", "==", currentUser.uid).orderBy("date", "desc").limit(10).get().then((snap) => { const div = document.getElementById('history-list'); div.innerHTML = ""; snap.forEach((doc) => { const d = doc.data(); div.innerHTML += `<div class="history-card"><h4>${d.client}</h4><button class="btn-load" onclick="restoreDevis('${doc.id}')">Ouvrir</button><button class="btn-delete" onclick="deleteHistory('${doc.id}')">X</button></div>`; }); }); }
+// --- CORRECTIF CHARGEMENT (Nouvelle fonction) ---
+function loadHistory() {
+    if(!isSubscribed) return;
+    
+    const div = document.getElementById('history-list');
+    div.innerHTML = "<p style='text-align:center; color:#777;'>Chargement en cours...</p>";
+
+    db.collection("historique")
+      .where("uid", "==", currentUser.uid)
+      .limit(20)
+      .get()
+      .then((snap) => {
+          div.innerHTML = ""; 
+          let projects = [];
+          snap.forEach((doc) => { projects.push({ id: doc.id, ...doc.data() }); });
+
+          // TRI EN JAVASCRIPT (Fix blocage)
+          projects.sort((a, b) => {
+              let dateA = a.date ? a.date.seconds : 0;
+              let dateB = b.date ? b.date.seconds : 0;
+              return dateB - dateA;
+          });
+
+          if(projects.length === 0) { div.innerHTML = "<p style='text-align:center; color:#999;'>Aucun projet trouvé.</p>"; return; }
+
+          projects.forEach((d) => {
+              let dateStr = d.date ? new Date(d.date.seconds * 1000).toLocaleDateString('fr-FR') : "Date inconnue";
+              div.innerHTML += `
+              <div class="history-card">
+                  <div style="text-align:left;">
+                      <h4 style="margin:0; color:#004085; font-size:16px;">👤 ${d.client || "Client"}</h4>
+                      <small style="color:#777; font-size:12px;">📅 ${dateStr} | ${d.items ? d.items.length : 0} éléments</small>
+                  </div>
+                  <div style="display:flex; gap:5px;">
+                      <button class="btn-load" onclick="restoreDevis('${d.id}')" title="Ouvrir">📂</button>
+                      <button class="btn-delete" onclick="deleteHistory('${d.id}')" title="Supprimer">🗑️</button>
+                  </div>
+              </div>`;
+          });
+      })
+      .catch((error) => {
+          console.error("Erreur History:", error);
+          div.innerHTML = "<p style='color:red; text-align:center;'>Erreur connexion.</p>";
+      });
+}
+
 window.saveCurrentDevis = function() { if(!isSubscribed) return alert("Expiré"); if(devis.length===0) return alert("Vide"); const name = prompt("Client?"); if(!name) return; db.collection("historique").add({ uid: currentUser.uid, client: name, date: firebase.firestore.FieldValue.serverTimestamp(), items: devis }).then(() => { alert("Sauvegardé"); loadHistory(); }); };
 window.restoreDevis = function(id) { if(!isSubscribed) return; db.collection("historique").doc(id).get().then(doc => { if(doc.exists) { devis = doc.data().items; updateUI(); calculateTotalDevis(); switchMode('calc'); } }); };
 window.deleteHistory = function(id) { if(confirm("Supprimer ?")) db.collection("historique").doc(id).delete().then(()=>loadHistory()); };
