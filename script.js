@@ -1,7 +1,5 @@
 // --- CONFIG & AUTH & ABONNEMENT ---
-// Hethi l-Config mta3ek (Matmesshech)
 const firebaseConfig = { apiKey: "AIzaSyBbxD-oDHcEzyXarmkykTfAclEaXeNidMA", authDomain: "gadour-pro-free.firebaseapp.com", projectId: "gadour-pro-free", storageBucket: "gadour-pro-free.firebasestorage.app", messagingSenderId: "301548307386", appId: "1:301548307386:web:2a694b5a38aee71dc41383" };
-
 let currentUser = null, db = null, isSubscribed = false;
 
 try {
@@ -17,12 +15,10 @@ try {
             document.getElementById('app-screen').style.display = 'block';
 
             // --- GESTION POPUP ACCUEIL (ARABE) ---
-            // Nthabtou kanou deja chefouh fel session hethi
             if (!sessionStorage.getItem('welcomeShown')) {
                 document.getElementById('welcomePopup').style.display = 'flex';
                 sessionStorage.setItem('welcomeShown', 'true'); 
             }
-            // ------------------------------------
             
             // Check Subscription
             const cachedSub = localStorage.getItem('gadour_sub_' + user.uid);
