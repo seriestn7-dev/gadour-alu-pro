@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gadour Alu - Pro (v12.0)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="sub-banner"></div>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <div style="margin-bottom: 30px;">
+                <h1 style="color:#004085; margin:0; font-size: 32px;">Gadour Alu 🏗️</h1>
+                <p style="color:#888; margin:5px 0 0 0; font-size: 14px;">Application Pro pour Menuiserie</p>
+            </div>
+
+            <div id="errorMsg" class="error-msg"></div>
+
+            <button id="googleBtn" onclick="loginWithGoogle()" class="btn-google-pro">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="24">
+                <span>Continuer avec Google</span>
+            </button>
+
+            <p style="margin-top: 40px; font-size: 11px; color: #aaa; line-height: 1.6;">
+                <span style="color:#28a745;">✔</span> Accès Sécurisé<br>
+                <span style="color:#28a745;">✔</span> Sauvegarde Automatique<br>
+                * 1 Mois Gratuit pour les nouveaux comptes.
+            </p>
+        </div>
+    </div>
+    <div id="app-screen">
+        <div class="navbar no-print">
+            <button class="nav-btn active" onclick="switchMode('calc')">📐 Calcul</button>
+            <button class="nav-btn" onclick="switchMode('debit')">✂️ Débit (Fissala)</button>
+            <button class="nav-btn" onclick="switchMode('facture')">📄 Facture</button>
+            <button class="nav-btn" onclick="switchMode('profile')">👤 Mon Espace</button>
+            <button class="nav-btn" onclick="switchMode('prices')">⚙️ Prix</button>
+            <button class="nav-btn" onclick="logout()" style="background:#dc3545; float:right;">Déconnexion</button>
+        </div>
+
+        <div class="container">
+            <h1 class="no-print">Gadour Alu <span style="font-size:12px; color:#aaa;">(v12.0)</span></h1>
+
+            <div id="calc-view" class="mode-section active">
+                <div class="input-grid no-print">
+                    <div style="grid-column: span 2;">
+                        <label>Type (Naw3):</label>
+                        <select id="productType" onchange="toggleFixOption()">
+                            <option value="monobloc">Store Monobloc (Lame 39)</option>
+                            <option value="coulissant">Fenêtre Coulissante</option>
+                            <option value="ouvrant1v">Fenêtre Ouvrante 1V (40404)</option>
+                            <option value="ouvrant1v_40100">Fenêtre Ouvrante 1V (40100)</option>
+                            <option value="ouvrant2v">Fenêtre Ouvrante 2V (40404)</option>
+                            <option value="ouvrant2v_40100" style="color:#007bff; font-weight:bold;">Fenêtre Ouvrante 2V (40100)</option>
+                            <option value="beb1v">Porte 1V (Type 40100)</option>
+                            <option value="store_apparent">Store Rideau (Apparent -3cm)</option>
+                            <option value="store_encastre">Store Rideau (Encastré +5cm)</option>
+                        </select>
+                    </div>
+                    <div><label>Largeur (L):</label><input type="number" id="largeur" value="120" step="0.1"></div>
+                    <div><label>Hauteur (H):</label><input type="number" id="hauteur" value="120" step="0.1"></div>
+                    
+                    <div>
+                        <label>Couleur:</label>
+                        <select id="couleur">
+                            <option value="1">Blanc (Standard)</option>
+                            <option value="1.15">Gris (+15%)</option>
+                            <option value="1.15">Noir (+15%)</option>
+                            <option value="1.30">Faux Bois (+30%)</option>
+                        </select>
+                    </div>
+
+                    <div><label>Qte:</label><input type="number" id="quantite" value="1"></div>
+                    <div><button id="btnAdd" class="btn btn-add" onclick="addItemToDevis()">+ Ajouter</button></div>
+
+                    <div id="fixOptionContainer" class="fix-option-box" style="display:none;">
+                        <label class="checkbox-wrapper"><input type="checkbox" id="hasFix" onchange="toggleFixInput()"> Avec Fixe ?</label>
+                        <div id="fixInputWrapper" class="fix-details" style="display:none;">
+                            <div><label style="font-size:12px;">Position:</label><select id="fixPosition" style="width:120px; padding:5px;"><option value="bottom">Bas</option><option value="top">Haut</option><option value="left">Gauche</option><option value="right">Droite</option></select></div>
+                            <div><label style="font-size:12px;">Taille (cm):</label><input type="number" id="fixSize" value="40" style="width:80px; padding:5px;"></div>
+                        </div>
+                    </div>
+                    <div class="marge-section">
+                        <label style="color:#155724; font-weight:bold;">Marge / Ziyada (%):</label>
+                        <input type="number" id="margePercent" value="0" style="width:70px; padding:5px; text-align:center;">
+                    </div>
+                </div>
+
+                <div id="devis-section">
+                    <h3>Panier</h3>
+                    <div id="devis-items"><table><thead><tr><th>Qte</th><th>Type</th><th>Coul.</th><th>Mesure</th><th>Détails Fixe</th><th>X</th></tr></thead><tbody></tbody></table></div>
+                    <button id="btnCalc" class="btn btn-calculate" onclick="calculateTotalDevis()">Calculer Coût (Sel3a)</button>
+                    <button class="btn btn-clear" onclick="clearDevis()">Vider</button>
+                    <button id="btnSave" class="btn btn-save" onclick="saveCurrentDevis()">💾 Sauvegarder</button>
+                </div>
+                <div id="total-result"></div>
+                <button id="printBtn" class="btn btn-print no-print" onclick="window.print()">🖨️ Imprimer Liste Achat</button>
+            </div>
+
+            <div id="profile-view" class="mode-section">
+                <h2>👤 Mon Espace</h2>
+                <div class="profile-card">
+                    <div class="profile-info"><h3 id="displayUsername">...</h3><p id="displayEmail">...</p><p style="margin-top:10px; font-size:12px;">Membre depuis le: <span id="memberSince">...</span></p></div>
+                    <div style="text-align:right;"><div id="subStatusBadge" style="background:white; color:#005a9c; padding:5px 15px; border-radius:20px; font-weight:bold;">...</div><p id="daysRemaining" style="font-size:12px; margin-top:5px; color:#eee;"></p></div>
+                </div>
+                <h3 style="color:#005a9c; border-bottom:2px solid #ddd; padding-bottom:10px;">📂 Mes Projets</h3>
+                <div id="history-list"><p style="text-align:center; color:#777;">Chargement...</p></div>
+            </div>
+
+            <div id="debit-view" class="mode-section">
+                <h2 style="color: #6610f2;">✂️ Plan de Coupe (Fissala)</h2>
+                <p class="no-print" style="background:#fff3cd; padding:10px; border-radius:5px; border:1px solid #ffeeba;">⚠️ Cadres +7cm. Marge +5cm entre les coupes.</p>
+                <button class="btn btn-debit no-print" onclick="calculateDebit()">🧮 Générer Coupe & Dessin</button>
+                <div id="visual-drawings" class="drawing-container"></div>
+                <div id="debit-result" style="margin-top: 20px;"></div>
+                <button class="btn btn-print no-print" onclick="window.print()" style="display:block; margin-top:20px;">🖨️ Imprimer Fissala</button>
+            </div>
+
+            <div id="facture-view" class="mode-section">
+                <div class="invoice-box">
+                    <div class="invoice-header">
+                        <div class="company-info">
+                            <div class="logo-placeholder" onclick="document.getElementById('logoInput').click()"><span id="logoText">CLIQUEZ ICI<br>POUR LOGO</span><img id="logoImage" style="display:none;"></div>
+                            <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="loadLogo(event)">
+                            <input type="text" class="company-name" value="GADOUR ALU" placeholder="Nom Entreprise">
+                            <textarea class="company-details" placeholder="Adresse...">Adresse: Hammam Lif&#10;Tél: 55 000 000</textarea>
+                        </div>
+                        <div class="invoice-details"><label>Date:</label> <input type="date" id="factureDate"></div>
+                    </div>
+                    <div class="client-section"><div><strong>Client:</strong> <input type="text" class="client-input" placeholder="Nom du client..."></div><div><strong>Adresse:</strong> <input type="text" class="client-input" placeholder="Adresse du client..."></div></div>
+                    <table class="facture-table-pro" id="facture-table"><thead><tr><th style="text-align:left;">Désignation</th><th style="width:80px;">Qté</th><th style="width:120px;">P.U (TND)</th><th style="width:120px;">Total (TND)</th></tr></thead><tbody></tbody></table>
+                    <div class="total-section"><div class="total-block"><h2 style="margin:0; font-size:18px;">Total à Payer</h2><h1 style="margin:5px 0; color:#005a9c; font-size:28px;"><span id="facture-total-display">0.000</span> TND</h1></div></div>
+                    <div class="signature-box"><div class="sig-line">Signature Client</div><div class="sig-line">Cachet Entreprise</div></div>
+                </div>
+                <button class="btn btn-print no-print" onclick="window.print()" style="display:block; margin-top:20px; background:#333;">🖨️ Imprimer Facture Pro</button>
+            </div>
+
+            <div id="prices-view" class="mode-section">
+                <h2 style="color: #d63384;">⚙️ Réglage des Prix</h2>
+                <div class="price-input-container"><span>Prix Vitrage m² (v_ballar) : </span><input type="number" class="price-input" data-price-key="v_ballar" value="45" step="0.001" onchange="updatePrice(this.dataset.priceKey, this.value)"> Dt</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div id="table-prices-profiles"></div>
+                    <div id="table-prices-accessoires"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
