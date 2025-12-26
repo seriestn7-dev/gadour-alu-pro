@@ -14,13 +14,7 @@ try {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'block';
 
-            // --- GESTION POPUP ACCUEIL (ARABE) ---
-            if (!sessionStorage.getItem('welcomeShown')) {
-                document.getElementById('welcomePopup').style.display = 'flex';
-                sessionStorage.setItem('welcomeShown', 'true'); 
-            }
-            
-            // Check Subscription
+            // Check Subscription (C'est ici qu'on gère le blocage)
             const cachedSub = localStorage.getItem('gadour_sub_' + user.uid);
             if(cachedSub) { 
                 const subData = JSON.parse(cachedSub); 
@@ -48,7 +42,7 @@ window.loginWithGoogle = function() {
     .catch((error) => { alert("Erreur Google: " + error.message); });
 }
 
-/* --- FONCTIONS POPUP ARABE --- */
+/* --- FONCTIONS POPUPS --- */
 window.closeWelcomePopup = function() {
     document.getElementById('welcomePopup').style.display = 'none';
 }
@@ -58,7 +52,7 @@ window.goToPricesAndClose = function() {
     switchMode('prices'); 
 }
 
-/* --- LOGIQUE METIER (CORE) --- */
+/* --- LOGIQUE METIER & ABONNEMENT --- */
 
 function checkSubscription(isBackground = false) {
     if(!currentUser) return;
@@ -78,13 +72,46 @@ function updateSubUI(daysLeft, userName, startDate) {
     document.getElementById('displayEmail').innerText = currentUser.email;
     document.getElementById('memberSince').innerText = new Date(startDate).toLocaleDateString();
     const banner = document.getElementById('sub-banner');
-    if (daysLeft > 0) { isSubscribed = true; banner.style.display = "block"; banner.style.background = "#28a745"; banner.style.color = "white"; banner.innerText = `✅ Essai actif: Reste ${daysLeft} jours.`; document.getElementById('subStatusBadge').innerText = "Actif"; document.getElementById('daysRemaining').innerText = `Expire dans ${daysLeft} jours`; enableApp(true); loadHistory(); } 
-    else { isSubscribed = false; banner.style.display = "block"; banner.className = "expired"; banner.innerText = "⛔ Abonnement expiré !"; document.getElementById('subStatusBadge').innerText = "Expiré"; document.getElementById('daysRemaining').innerText = "Veuillez payer."; enableApp(false); }
+
+    if (daysLeft > 0) { 
+        // === ABONNEMENT ACTIF ===
+        isSubscribed = true;
+        // 1. Cacher le blocage s'il est affiché
+        document.getElementById('expiredPopup').style.display = 'none';
+        
+        // 2. Afficher le message d'accueil arabe (une seule fois par session)
+        if (!sessionStorage.getItem('welcomeShown')) {
+            document.getElementById('welcomePopup').style.display = 'flex';
+            sessionStorage.setItem('welcomeShown', 'true'); 
+        }
+
+        banner.style.display = "block"; banner.style.background = "#28a745"; banner.style.color = "white"; 
+        banner.innerText = `✅ Essai actif: Reste ${daysLeft} jours.`; 
+        document.getElementById('subStatusBadge').innerText = "Actif"; 
+        document.getElementById('daysRemaining').innerText = `Expire dans ${daysLeft} jours`; 
+        enableApp(true); 
+        loadHistory(); 
+    } 
+    else { 
+        // === ABONNEMENT EXPIRÉ (BLOCAGE) ===
+        isSubscribed = false;
+        
+        // 1. AFFICHER LE POPUP ROUGE (BLOCAGE)
+        document.getElementById('expiredPopup').style.display = 'flex';
+        // 2. Cacher l'accueil normal
+        document.getElementById('welcomePopup').style.display = 'none';
+
+        banner.style.display = "block"; banner.className = "expired"; 
+        banner.innerText = "⛔ Abonnement expiré !"; 
+        document.getElementById('subStatusBadge').innerText = "Expiré"; 
+        document.getElementById('daysRemaining').innerText = "Veuillez payer."; 
+        enableApp(false); 
+    }
 }
 
 function enableApp(enabled) { document.getElementById('btnAdd').disabled = !enabled; document.getElementById('btnCalc').disabled = !enabled; document.getElementById('btnSave').disabled = !enabled; }
 
-/* --- VERSION CORRIGÉE: LOAD HISTORY (Fix Blockage) --- */
+/* --- LOAD HISTORY (Clean Sort) --- */
 function loadHistory() {
     if(!isSubscribed) return;
     
