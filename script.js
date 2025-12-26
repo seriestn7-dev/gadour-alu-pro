@@ -14,7 +14,6 @@ try {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'block';
 
-            // Check Subscription (C'est ici qu'on gère le blocage)
             const cachedSub = localStorage.getItem('gadour_sub_' + user.uid);
             if(cachedSub) { 
                 const subData = JSON.parse(cachedSub); 
@@ -34,7 +33,7 @@ try {
 
 } catch (e) { console.error(e); }
 
-/* --- GOOGLE LOGIN ONLY --- */
+/* --- GOOGLE LOGIN --- */
 window.loginWithGoogle = function() {
     var provider = new firebase.auth.GoogleAuthProvider();
     firebase.auth().signInWithPopup(provider)
@@ -42,7 +41,7 @@ window.loginWithGoogle = function() {
     .catch((error) => { alert("Erreur Google: " + error.message); });
 }
 
-/* --- FONCTIONS POPUPS --- */
+/* --- POPUPS --- */
 window.closeWelcomePopup = function() {
     document.getElementById('welcomePopup').style.display = 'none';
 }
@@ -74,12 +73,9 @@ function updateSubUI(daysLeft, userName, startDate) {
     const banner = document.getElementById('sub-banner');
 
     if (daysLeft > 0) { 
-        // === ABONNEMENT ACTIF ===
         isSubscribed = true;
-        // 1. Cacher le blocage s'il est affiché
         document.getElementById('expiredPopup').style.display = 'none';
         
-        // 2. Afficher le message d'accueil arabe (une seule fois par session)
         if (!sessionStorage.getItem('welcomeShown')) {
             document.getElementById('welcomePopup').style.display = 'flex';
             sessionStorage.setItem('welcomeShown', 'true'); 
@@ -93,12 +89,8 @@ function updateSubUI(daysLeft, userName, startDate) {
         loadHistory(); 
     } 
     else { 
-        // === ABONNEMENT EXPIRÉ (BLOCAGE) ===
         isSubscribed = false;
-        
-        // 1. AFFICHER LE POPUP ROUGE (BLOCAGE)
         document.getElementById('expiredPopup').style.display = 'flex';
-        // 2. Cacher l'accueil normal
         document.getElementById('welcomePopup').style.display = 'none';
 
         banner.style.display = "block"; banner.className = "expired"; 
@@ -111,10 +103,9 @@ function updateSubUI(daysLeft, userName, startDate) {
 
 function enableApp(enabled) { document.getElementById('btnAdd').disabled = !enabled; document.getElementById('btnCalc').disabled = !enabled; document.getElementById('btnSave').disabled = !enabled; }
 
-/* --- LOAD HISTORY (Clean Sort) --- */
+/* --- LOAD HISTORY --- */
 function loadHistory() {
     if(!isSubscribed) return;
-    
     const div = document.getElementById('history-list');
     div.innerHTML = "<p style='text-align:center; color:#777;'>Chargement en cours...</p>";
 
@@ -125,28 +116,16 @@ function loadHistory() {
       .then((snap) => {
           div.innerHTML = ""; 
           let projects = [];
-          snap.forEach((doc) => {
-              projects.push({ id: doc.id, ...doc.data() });
-          });
-
-          // TRI MANUEL (JavaScript Sort)
+          snap.forEach((doc) => { projects.push({ id: doc.id, ...doc.data() }); });
           projects.sort((a, b) => {
               let dateA = a.date ? a.date.seconds : 0;
               let dateB = b.date ? b.date.seconds : 0;
               return dateB - dateA;
           });
-
-          if(projects.length === 0) {
-              div.innerHTML = "<p style='text-align:center; color:#999;'>Aucun projet trouvé.</p>";
-              return;
-          }
-
+          if(projects.length === 0) { div.innerHTML = "<p style='text-align:center; color:#999;'>Aucun projet trouvé.</p>"; return; }
           projects.forEach((d) => {
               let dateStr = "Date inconnue";
-              if(d.date && d.date.seconds) {
-                  dateStr = new Date(d.date.seconds * 1000).toLocaleDateString('fr-FR');
-              }
-
+              if(d.date && d.date.seconds) { dateStr = new Date(d.date.seconds * 1000).toLocaleDateString('fr-FR'); }
               div.innerHTML += `
               <div class="history-card">
                   <div style="text-align:left;">
@@ -160,10 +139,7 @@ function loadHistory() {
               </div>`;
           });
       })
-      .catch((error) => {
-          console.error("Erreur History:", error);
-          div.innerHTML = "<p style='color:red; text-align:center;'>Erreur: " + error.message + "</p>";
-      });
+      .catch((error) => { div.innerHTML = "<p style='color:red; text-align:center;'>Erreur: " + error.message + "</p>"; });
 }
 
 window.saveCurrentDevis = function() { if(!isSubscribed) return alert("Expiré"); if(devis.length===0) return alert("Vide"); const name = prompt("Client?"); if(!name) return; db.collection("historique").add({ uid: currentUser.uid, client: name, date: firebase.firestore.FieldValue.serverTimestamp(), items: devis }).then(() => { alert("Sauvegardé"); loadHistory(); }); };
@@ -183,6 +159,7 @@ function loadLogo(event) {
     }
 }
 
+// === DATABASE ===
 let defaultDatabase = { "p_67103": 200, "p_67104": 120, "p_67105": 120, "p_67106": 120, "p_Rail": 80, "p_67114": 90, "p_40402": 120, "p_40404": 200, "p_40107": 30, "p_40112": 120, "p_40100": 100, "p_40121": 100, "p_40154": 100, "p_40134": 80, "p_40166": 60, "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, "p_Axe_Store": 40, "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, "p_Traverse40104": 120, "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, "a_Joint_Brosse": 0.500, "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, "a_Ecer_Danimo_G": 0.050, "a_Ecer_Danimo_P": 0.050, "a_Ecer_Tall_7did": 2, "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.500, "a_Joint_A36": 0.500, "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, "a_Joint_Vitrage_242": 0.500, "a_Angle_Parclose": 0.500, "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, "a_Axe_Rallonge": 10, "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.500, "a_Joint_Brosse_6": 0.500, "a_Bochon_55": 0.500, "a_Bochon_39": 0.500, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.500, "a_Joint_Batman_247": 0.800, "v_ballar": 45 };
 let database = {}; const toulBarra = 650; const CUT_MARGIN = 5; let devis = [];
 
@@ -220,7 +197,6 @@ window.toggleFixInput = function() { document.getElementById('fixInputWrapper').
 
 window.addItemToDevis = function() {
     if(!isSubscribed) return alert("Abonnement expiré !");
-
     const p = document.getElementById('productType');
     const l = parseFloat(document.getElementById('largeur').value);
     const h = parseFloat(document.getElementById('hauteur').value);
@@ -232,20 +208,12 @@ window.addItemToDevis = function() {
         fs = parseFloat(document.getElementById('fixSize').value);
         fp = document.getElementById('fixPosition').value;
     }
-
     if (isNaN(l) || isNaN(h) || isNaN(q)) return;
-    
     if (hasFix) {
         if ((fp === 'top' || fp === 'bottom') && fs >= h) { alert("Erreur: Fixe > Hauteur"); return; }
         if ((fp === 'left' || fp === 'right') && fs >= l) { alert("Erreur: Fixe > Largeur"); return; }
     }
-
-    devis.push({
-        product: p.value, productName: p.options[p.selectedIndex].text,
-        L_cm: l, H_cm: h, Q: q,
-        colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text,
-        hasFix: hasFix, fixSize: fs, fixPos: fp
-    });
+    devis.push({ product: p.value, productName: p.options[p.selectedIndex].text, L_cm: l, H_cm: h, Q: q, colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text, hasFix: hasFix, fixSize: fs, fixPos: fp });
     updateUI();
 }
 
@@ -305,15 +273,11 @@ function generateCutData(calculateMetersOnly = false) {
             let is2V = it.product.includes("2v");
             let hFarda = finalH - 4.2;
             let wFarda = is2V ? ((finalL - 4.5) / 2) : (finalL - 4.2);
-
             addPiece(profilOuvrant, hFarda, (is2V ? 4 : 2) * Q); 
             addPiece(profilOuvrant, wFarda, (is2V ? 4 : 2) * Q);
-            
             if (is2V) addPiece("p_40112", finalH - 11, 1 * Q); 
-            
             let needParclose = true;
             if (!is2V && profilOuvrant === "p_40404") needParclose = false; 
-
             if (needParclose) {
                 let hPar = hFarda - 11;
                 let wPar = wFarda - 11;
@@ -355,30 +319,17 @@ function generateCutData(calculateMetersOnly = false) {
 
 window.calculateTotalDevis = function() {
     if (devis.length === 0) { alert("Panier Vide !"); return; }
-    
-    // SYSTEME: SECURITE
     if(!isSubscribed) return alert("Abonnement expiré !");
 
-    // 1. Générer les données de coupe
     let cd = generateCutData(); 
-    
-    // 2. Initialisation des variables
     let html = '<h3>1. Profilés</h3><table><tr><th>Ref</th><th>Métrage Total</th><th>Barres</th></tr>';
-    let totalProfiles = 0;
-    let totalAccessoires = 0;
-    let totalVitrage = 0;
-    let tot_surf = 0; 
-
-    // Moyenne de couleur
+    let totalProfiles = 0; let totalAccessoires = 0; let totalVitrage = 0; let tot_surf = 0; 
     let avgColor = devis.reduce((sum, item) => sum + item.colorFactor, 0) / devis.length;
 
-    // 3. Calcul Profilés
     for(let k in cd) { 
-        const meter = cd[k].meterage; 
-        const barres = cd[k].bars.length;
+        const meter = cd[k].meterage; const barres = cd[k].bars.length;
         if(meter > 0) {
-            let price = database[k] || 0; 
-            let cost = barres * price * avgColor; 
+            let price = database[k] || 0; let cost = barres * price * avgColor; 
             totalProfiles += cost;
             html += `<tr><td>${k.replace('p_','')}</td><td>${meter.toFixed(1)} cm</td><td><b>${barres}</b></td></tr>`;
         }
@@ -386,19 +337,13 @@ window.calculateTotalDevis = function() {
     html += `<tr><td colspan="3" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Profilés: ${totalProfiles.toFixed(3)} TND</td></tr>`;
     html += "</tbody></table>";
 
-    // 4. Calcul Accessoires & Surface Vitrage
-    let mat = {};
-    let v_html = ""; 
-    const EPAISSEUR_TRAVERSE = 4.5;
-
-    // On initialise tous les accessoires à 0
+    let mat = {}; let v_html = ""; const EPAISSEUR_TRAVERSE = 4.5;
     for(let key in database) { if(key.startsWith('a_')) mat[key] = 0; }
 
     for (const it of devis) {
         const L = it.L_cm; const H = it.H_cm; const Q = it.Q;
         let workingH = H; let workingL = L;
 
-        // Gestion du Fixe
         if(it.hasFix) {
              if(it.fixPos === 'top' || it.fixPos === 'bottom') {
                  workingH = H - it.fixSize - EPAISSEUR_TRAVERSE;
@@ -413,7 +358,6 @@ window.calculateTotalDevis = function() {
              }
         }
 
-        // Logique Accessoires par Type
         if (it.product === "monobloc") {
             let nbLames = Math.ceil((H - 10) / 3.9);
             mat.a_Moteur_Store_40 += 1 * Q;
@@ -433,24 +377,27 @@ window.calculateTotalDevis = function() {
             mat.a_Joint_Brosse_6 += (H * 2 / 100) * Q; 
         }
         else if (it.product === "coulissant") {
-            mat.a_Gallet += 4*Q; mat.a_Fermeture += 1*Q; mat.a_Kit_Etancheite += 1*Q;
+            mat.a_Gallet += 4*Q; 
+            mat.a_Fermeture += 2*Q; 
+            mat.a_Gache_Fermeture += 2*Q; 
+            mat.a_Kit_Etancheite += 1*Q;
             mat.a_Joint_Brosse += ((((workingH-6.5)*2) + (workingH-6.5) + (((L-15.5)/2)*2)) / 100) * Q;
-            mat.a_Ecer_67103 += 4*Q; mat.a_Ecer_Danimo_P += 4*Q;
-            mat.a_Joint_A36 += ((((workingH-6.5)*8) + (((L-15.5)/2)*8)) / 100) * Q; 
+            mat.a_Ecer_67103 += 4*Q; 
             let gh = (workingH - 6.5) - 8.5; let gw = ((L - 15.5) / 2) - 1;
             let surf = (gh * gw * 2 * Q) / 10000; tot_surf += surf;
             v_html += `<tr><td>Fenêtre Coulissante</td><td>${2*Q}</td><td>${gh.toFixed(1)}x${gw.toFixed(1)}</td><td>${surf.toFixed(2)}</td></tr>`;
         }
         else if (it.product.includes("ouvrant")) {
             let is2V = it.product.includes("2v");
-            let nbrV = is2V ? 2 : 1;
             
+            // Zhez (Dormant) => 4 P Model
+            mat.a_Ecer_Danimo_P += 4 * Q;
+
             if (is2V) {
                 mat.a_Paumelle += 4 * Q; 
                 mat.a_Cremone += 1 * Q; 
                 mat.a_Kit_Cremone += 1 * Q;
-                mat.a_Ecer_Danimo_P += 5 * Q;
-                mat.a_Ecer_Danimo_G += 7 * Q;
+                mat.a_Ecer_Danimo_G += 8 * Q; // 2 Fardas * 4 (G Model)
                 mat.a_Ecer_Font += 4 * Q;
                 mat.a_Ecer_Tall_7did += 4 * Q;
                 mat.a_Angle_Parclose += 8 * Q;
@@ -463,15 +410,14 @@ window.calculateTotalDevis = function() {
                 mat.a_Cremone += 1 * Q;
                 mat.a_Kit_Cremone += 1 * Q;
                 mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q;
-                mat.a_Ecer_Danimo_G += 2 * Q; mat.a_Ecer_Danimo_P += 2 * Q;
+                mat.a_Ecer_Danimo_G += 4 * Q; // 1 Farda * 4 (G Model)
                 mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q;
             }
 
-            // Surface Vitrage Ouvrant
             let gw = is2V ? ((workingL-4.5)/2)-10 : (workingL-4.2)-10;
             let gh = (workingH-4.2)-10;
-            let surf = (gh*gw*nbrV*Q)/10000; tot_surf += surf;
-            v_html += `<tr><td>${it.productName}</td><td>${nbrV*Q}</td><td>${gh.toFixed(1)}x${gw.toFixed(1)}</td><td>${surf.toFixed(2)}</td></tr>`;
+            let surf = (gh*gw*(is2V?2:1)*Q)/10000; tot_surf += surf;
+            v_html += `<tr><td>${it.productName}</td><td>${(is2V?2:1)*Q}</td><td>${gh.toFixed(1)}x${gw.toFixed(1)}</td><td>${surf.toFixed(2)}</td></tr>`;
         }
         else if (it.product === "beb1v") {
             mat.a_Paumelle += 4 * Q; 
@@ -499,14 +445,12 @@ window.calculateTotalDevis = function() {
     html += `<tr><td colspan="3" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Accessoires: ${totalAccessoires.toFixed(3)} TND</td></tr>`;
     html += "</tbody></table>";
 
-    // 5. Calcul Vitrage
     let gCost = tot_surf * (database['v_ballar'] || 45); 
     if(tot_surf > 0) {
         totalVitrage = gCost;
         html += `<h3>3. Vitrage</h3><table><thead><tr><th>Type</th><th>Nbr</th><th>Mesure</th><th>Surf</th></tr></thead><tbody>${v_html}</tbody><tfoot><tr><td colspan='3'>Total Surface: ${tot_surf.toFixed(2)} m²</td><td></td></tr><tr><td colspan='3' style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Vitrage: ${totalVitrage.toFixed(3)} TND</td><td></td></tr></tfoot></table>`;
     }
 
-    // 6. Total Final
     let grandTotal = totalProfiles + totalAccessoires + totalVitrage;
     let margePercent = parseFloat(document.getElementById('margePercent').value) || 0;
     let finalTotal = grandTotal * (1 + margePercent/100);
@@ -529,8 +473,6 @@ function drawWindowSVG(item, index) {
     const w = L * scale; const h = H * scale;
     let svgContent = "";
     svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
-    
-    // DRAW FIXE
     let yStart = 10, xStart = 10;
     let hOuv = h, wOuv = w;
     if(item.hasFix) {
@@ -545,8 +487,6 @@ function drawWindowSVG(item, index) {
             hOuv = h - fixS;
         }
     }
-    
-    // DRAW TYPE
     if (type === 'monobloc') {
         svgContent += `<rect x="10" y="5" width="${w}" height="15" fill="#333" />`;
         for(let i=25; i<h; i+=10) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
@@ -566,7 +506,6 @@ function drawWindowSVG(item, index) {
         svgContent += `<rect x="${15}" y="${yStart+5}" width="${w_op}" height="${hOuv-10}" stroke="#28a745" stroke-width="2" fill="rgba(40, 167, 69, 0.1)" />`;
         svgContent += `<rect x="${10 + w - w_op - 5}" y="${yStart+5}" width="${w_op}" height="${hOuv-10}" stroke="#28a745" stroke-width="2" fill="rgba(40, 167, 69, 0.1)" />`;
     }
-
     svgContent += `<text x="${10 + w/2}" y="25" text-anchor="middle" class="dim-text" fill="#005a9c">L: ${L}</text>`;
     svgContent += `<text x="15" y="${10 + h/2}" transform="rotate(-90 15,${10 + h/2})" text-anchor="middle" class="dim-text" fill="#005a9c">H: ${H}</text>`;
     return `<div class="window-card"><h4 style="margin:0 0 5px 0;">${item.productName} (x${item.Q})</h4><svg width="${w+20}" height="${h+20}" class="window-svg">${svgContent}</svg></div>`;
@@ -597,28 +536,12 @@ function calculateDebit() {
 function renderFacture() { 
     let tb = document.querySelector("#facture-table tbody"); 
     tb.innerHTML = "";
-    let grandTotal = 0;
-    
-    // Get Marge
     let marge = parseFloat(document.getElementById('margePercent').value) || 0;
     let multiplier = 1 + (marge / 100);
-
     devis.forEach(item => {
-        // Estimated Unit Price for display (Base 100 + Surface * Factor) * Marge
         let prixUnit = (100 + (item.L_cm * item.H_cm * 0.08)) * multiplier; 
         let totalLigne = prixUnit * item.Q;
-        
-        tb.innerHTML += `
-            <tr>
-                <td style="text-align:left; font-weight:bold;">
-                    ${item.productName} <br>
-                    <span style="font-size:12px; color:#666;">Dim: ${item.L_cm} x ${item.H_cm} | Coul: ${item.colorName}</span>
-                </td>
-                <td>${item.Q}</td>
-                <td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" style="width:100%; border:none; text-align:center;" onchange="updateFactureTotal()"></td>
-                <td class="facture-total">${totalLigne.toFixed(3)}</td>
-            </tr>
-        `;
+        tb.innerHTML += `<tr><td style="text-align:left; font-weight:bold;">${item.productName} <br><span style="font-size:12px; color:#666;">Dim: ${item.L_cm} x ${item.H_cm} | Coul: ${item.colorName}</span></td><td>${item.Q}</td><td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" style="width:100%; border:none; text-align:center;" onchange="updateFactureTotal()"></td><td class="facture-total">${totalLigne.toFixed(3)}</td></tr>`;
     });
     updateFactureTotal();
     document.getElementById('factureDate').valueAsDate = new Date();
@@ -628,14 +551,10 @@ function updateFactureTotal() {
     let rows = document.querySelectorAll("#facture-table tbody tr");
     let grandTotal = 0;
     rows.forEach(row => {
-        const qte = parseFloat(row.cells[1].innerText); // Qty is in 2nd column (index 1)
-        const puInput = row.querySelector('.facture-pu');
-        const pu = parseFloat(puInput.value);
-        const totalCell = row.querySelector('.facture-total');
-        let totalLigne = 0;
-        if (!isNaN(qte) && !isNaN(pu)) totalLigne = qte * pu;
-        totalCell.innerText = totalLigne.toFixed(3);
-        grandTotal += totalLigne;
+        const qte = parseFloat(row.cells[1].innerText); const puInput = row.querySelector('.facture-pu');
+        const pu = parseFloat(puInput.value); const totalCell = row.querySelector('.facture-total');
+        let totalLigne = 0; if (!isNaN(qte) && !isNaN(pu)) totalLigne = qte * pu;
+        totalCell.innerText = totalLigne.toFixed(3); grandTotal += totalLigne;
     });
     document.getElementById('facture-total-display').innerText = grandTotal.toFixed(3);
 }
