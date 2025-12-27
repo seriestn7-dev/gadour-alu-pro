@@ -12,31 +12,24 @@ try {
             currentUser = user;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'block';
-
             const cachedSub = localStorage.getItem('gadour_sub_' + user.uid);
             if(cachedSub) { 
                 const subData = JSON.parse(cachedSub); 
                 updateSubUI(subData.daysLeft, subData.userName, subData.createdAt); 
                 checkSubscription(true); 
-            } else { 
-                checkSubscription(); 
-            }
+            } else { checkSubscription(); }
         } else {
             currentUser = null;
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('app-screen').style.display = 'none';
         }
     });
-
     window.logout = function() { auth.signOut(); window.location.reload(); };
-
 } catch (e) { console.error(e); }
 
 window.loginWithGoogle = function() {
     var provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithPopup(provider)
-    .then((result) => { console.log("Google OK"); })
-    .catch((error) => { alert("Erreur Google: " + error.message); });
+    firebase.auth().signInWithPopup(provider).then((result) => { console.log("Google OK"); }).catch((error) => { alert("Erreur: " + error.message); });
 }
 
 window.closeWelcomePopup = function() { document.getElementById('welcomePopup').style.display = 'none'; }
@@ -60,24 +53,19 @@ function updateSubUI(daysLeft, userName, startDate) {
     document.getElementById('displayEmail').innerText = currentUser.email;
     document.getElementById('memberSince').innerText = new Date(startDate).toLocaleDateString();
     const banner = document.getElementById('sub-banner');
-
     if (daysLeft > 0) { 
         isSubscribed = true;
         document.getElementById('expiredPopup').style.display = 'none';
         if (!sessionStorage.getItem('welcomeShown')) { document.getElementById('welcomePopup').style.display = 'flex'; sessionStorage.setItem('welcomeShown', 'true'); }
         banner.style.display = "block"; banner.style.background = "#28a745"; banner.style.color = "white"; 
         banner.innerText = `✅ Essai actif: Reste ${daysLeft} jours.`; 
-        document.getElementById('subStatusBadge').innerText = "Actif"; 
-        document.getElementById('daysRemaining').innerText = `Expire dans ${daysLeft} jours`; 
+        document.getElementById('subStatusBadge').innerText = "Actif"; document.getElementById('daysRemaining').innerText = `Expire dans ${daysLeft} jours`; 
         enableApp(true); loadHistory(); 
     } else { 
         isSubscribed = false;
-        document.getElementById('expiredPopup').style.display = 'flex';
-        document.getElementById('welcomePopup').style.display = 'none';
-        banner.style.display = "block"; banner.className = "expired"; 
-        banner.innerText = "⛔ Abonnement expiré !"; 
-        document.getElementById('subStatusBadge').innerText = "Expiré"; 
-        document.getElementById('daysRemaining').innerText = "Veuillez payer."; 
+        document.getElementById('expiredPopup').style.display = 'flex'; document.getElementById('welcomePopup').style.display = 'none';
+        banner.style.display = "block"; banner.className = "expired"; banner.innerText = "⛔ Abonnement expiré !"; 
+        document.getElementById('subStatusBadge').innerText = "Expiré"; document.getElementById('daysRemaining').innerText = "Veuillez payer."; 
         enableApp(false); 
     }
 }
@@ -296,25 +284,72 @@ window.calculateTotalDevis = function() {
     document.getElementById('printBtn').style.display = 'block';
 }
 
-function drawWindowSVG(item) {
-    const L = item.L_cm; const H = item.H_cm;
-    return `<div class="window-card"><h4>${item.productName}</h4><p>${L}x${H}</p></div>`; // Simplifié pour brevity
+function drawWindowSVG(item, index) {
+    const L = item.L_cm; const H = item.H_cm; const type = item.product;
+    const maxS = 200; 
+    const scale = Math.min(maxS / L, maxS / H);
+    const w = L * scale; const h = H * scale;
+    let svgContent = "";
+    svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+    
+    let yStart = 10, xStart = 10;
+    let hOuv = h, wOuv = w;
+    if(item.hasFix) {
+        let fixS = item.fixSize * scale;
+        if (item.fixPos === 'top') {
+            svgContent += `<line x1="10" y1="${10+fixS}" x2="${10+w}" y2="${10+fixS}" stroke="#005a9c" stroke-width="3" />`;
+            svgContent += `<text x="${10+w/2}" y="${10+fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
+            yStart = 10 + fixS; hOuv = h - fixS;
+        } else if (item.fixPos === 'bottom') {
+            svgContent += `<line x1="10" y1="${10+h-fixS}" x2="${10+w}" y2="${10+h-fixS}" stroke="#005a9c" stroke-width="3" />`;
+            svgContent += `<text x="${10+w/2}" y="${10+h-fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
+            hOuv = h - fixS;
+        }
+    }
+    
+    if (type === 'monobloc') {
+        svgContent += `<rect x="10" y="5" width="${w}" height="15" fill="#333" />`;
+        for(let i=25; i<h; i+=10) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
+    }
+    else if (type.includes('beb')) {
+        // Dessin Porte: Pas de barre en bas (seuil)
+        svgContent = `<polyline points="10,${10+h} 10,10 ${10+w},10 ${10+w},${10+h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+        svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${w-10}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
+        svgContent += `<circle cx="${10+15}" cy="${yStart+hOuv/2}" r="3" fill="black" />`; 
+        svgContent += `<rect x="${10+5}" y="${yStart+hOuv-25}" width="${w-10}" height="20" fill="#eee" stroke="#28a745" />`;
+    }
+    else if (type.includes('ouvrant')) {
+        let inset = 5; 
+        svgContent += `<rect x="${10+inset}" y="${yStart+inset}" width="${w-(inset*2)}" height="${hOuv-(inset*2)}" stroke="#28a745" stroke-width="2" fill="none" stroke-dasharray="5,5" />`;
+        if(type.includes('2v')) svgContent += `<line x1="${10+w/2}" y1="${yStart}" x2="${10+w/2}" y2="${yStart+hOuv}" stroke="#28a745" stroke-width="2" />`;
+    }
+    else if (type === 'coulissant') {
+        let w_op = (w / 2) + 5; 
+        svgContent += `<rect x="${15}" y="${yStart+5}" width="${w_op}" height="${hOuv-10}" stroke="#28a745" stroke-width="2" fill="rgba(40, 167, 69, 0.1)" />`;
+        svgContent += `<rect x="${10 + w - w_op - 5}" y="${yStart+5}" width="${w_op}" height="${hOuv-10}" stroke="#28a745" stroke-width="2" fill="rgba(40, 167, 69, 0.1)" />`;
+    }
+
+    svgContent += `<text x="${10 + w/2}" y="25" text-anchor="middle" class="dim-text" fill="#005a9c">L: ${L}</text>`;
+    svgContent += `<text x="15" y="${10 + h/2}" transform="rotate(-90 15,${10 + h/2})" text-anchor="middle" class="dim-text" fill="#005a9c">H: ${H}</text>`;
+    return `<div class="window-card"><h4 style="margin:0 0 5px 0;">${item.productName} (x${item.Q})</h4><svg width="${w+20}" height="${h+20}" class="window-svg">${svgContent}</svg></div>`;
 }
 
 function calculateDebit() {
     if(devis.length==0) return alert("Panier vide!");
-    let visualHTML = ""; devis.forEach((item, index) => visualHTML += drawWindowSVG(item));
+    let visualHTML = "";
+    devis.forEach((item, index) => visualHTML += drawWindowSVG(item, index));
     document.getElementById('visual-drawings').innerHTML = visualHTML;
     const cutData = generateCutData();
     let output = "";
     for (let ref in cutData) {
         const data = cutData[ref];
-        output += `<div class="bar-container"><div class="bar-title"><span>${ref.replace('p_','')} (${data.bars.length} Barres)</span><span style="color:#d63384;">Total: ${data.cuts.length} pcs</span></div>`;
-        data.bars.forEach(b => {
+        let totalPieces = data.cuts.length;
+        output += `<div class="bar-container"><div class="bar-title"><span>${ref.replace('p_','')} (${data.bars.length} Barres)</span><span style="color:#d63384;">Total: ${totalPieces} pcs</span></div>`;
+        data.bars.forEach((b, idx) => {
             output += `<div class="bar-visual">`;
             b.cuts.forEach(c => { output += `<div class="cut-piece" style="width:${(c/toulBarra)*100}%">${c.toFixed(1)}</div>`; });
             if(b.rem > 0) output += `<div class="waste-piece" style="width:${(b.rem/toulBarra)*100}%" title="Restant: ${b.rem.toFixed(1)}"></div>`;
-            output += `</div>`;
+            output += `</div><div style="font-size:12px; text-align:right; color:red;">Chute Net: ${b.rem.toFixed(1)} cm</div>`;
         });
         output += `</div>`;
     }
@@ -322,25 +357,32 @@ function calculateDebit() {
 }
 
 function renderFacture() { 
-    let tb = document.querySelector("#facture-table tbody"); tb.innerHTML = "";
+    let tb = document.querySelector("#facture-table tbody"); 
+    tb.innerHTML = "";
     let marge = parseFloat(document.getElementById('margePercent').value) || 0;
+    let multiplier = 1 + (marge / 100);
     devis.forEach(item => {
-        let prixUnit = (100 + (item.L_cm * item.H_cm * 0.08)) * (1 + marge / 100); 
-        tb.innerHTML += `<tr><td>${item.productName}</td><td>${item.Q}</td><td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" onchange="updateFactureTotal()"></td><td class="facture-total">${(prixUnit * item.Q).toFixed(3)}</td></tr>`;
+        let prixUnit = (100 + (item.L_cm * item.H_cm * 0.08)) * multiplier; 
+        let totalLigne = prixUnit * item.Q;
+        tb.innerHTML += `<tr><td style="text-align:left; font-weight:bold;">${item.productName} <br><span style="font-size:12px; color:#666;">Dim: ${item.L_cm} x ${item.H_cm} | Coul: ${item.colorName}</span></td><td>${item.Q}</td><td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" style="width:100%; border:none; text-align:center;" onchange="updateFactureTotal()"></td><td class="facture-total">${totalLigne.toFixed(3)}</td></tr>`;
     });
     updateFactureTotal();
+    document.getElementById('factureDate').valueAsDate = new Date();
 }
 
 function updateFactureTotal() { 
+    let rows = document.querySelectorAll("#facture-table tbody tr");
     let grandTotal = 0;
-    document.querySelectorAll("#facture-table tbody tr").forEach(row => {
-        const qte = parseFloat(row.cells[1].innerText); const pu = parseFloat(row.querySelector('.facture-pu').value);
-        if (!isNaN(qte) && !isNaN(pu)) { row.querySelector('.facture-total').innerText = (qte * pu).toFixed(3); grandTotal += qte * pu; }
+    rows.forEach(row => {
+        const qte = parseFloat(row.cells[1].innerText); const puInput = row.querySelector('.facture-pu');
+        const pu = parseFloat(puInput.value); const totalCell = row.querySelector('.facture-total');
+        let totalLigne = 0; if (!isNaN(qte) && !isNaN(pu)) totalLigne = qte * pu;
+        totalCell.innerText = totalLigne.toFixed(3); grandTotal += totalLigne;
     });
     document.getElementById('facture-total-display').innerText = grandTotal.toFixed(3);
 }
 
-// === DARK MODE TOGGLE ===
+// === DARK MODE ===
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
     const isDark = document.body.classList.contains('dark-mode');
@@ -350,9 +392,7 @@ function toggleDarkMode() {
 
 function loadTheme() {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-    }
+    if (savedTheme === 'dark') { document.body.classList.add('dark-mode'); }
     updateDarkModeIcon();
 }
 
