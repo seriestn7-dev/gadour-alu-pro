@@ -1,4 +1,4 @@
-// --- CONFIG & AUTH & ABONNEMENT ---
+// --- CONFIG & AUTH ---
 const firebaseConfig = { apiKey: "AIzaSyBbxD-oDHcEzyXarmkykTfAclEaXeNidMA", authDomain: "gadour-pro-free.firebaseapp.com", projectId: "gadour-pro-free", storageBucket: "gadour-pro-free.firebasestorage.app", messagingSenderId: "301548307386", appId: "1:301548307386:web:2a694b5a38aee71dc41383" };
 let currentUser = null, db = null, isSubscribed = false;
 
@@ -51,7 +51,6 @@ function checkSubscription(isBackground = false) {
 function updateSubUI(daysLeft, userName, startDate) {
     document.getElementById('displayUsername').innerText = "Bienvenue, " + (userName || "Pro");
     document.getElementById('displayEmail').innerText = currentUser.email;
-    document.getElementById('memberSince').innerText = new Date(startDate).toLocaleDateString();
     const banner = document.getElementById('sub-banner');
     if (daysLeft > 0) { 
         isSubscribed = true;
@@ -75,15 +74,13 @@ function enableApp(enabled) { document.getElementById('btnAdd').disabled = !enab
 function loadHistory() {
     if(!isSubscribed) return;
     const div = document.getElementById('history-list');
-    div.innerHTML = "<p style='text-align:center; color:#777;'>Chargement en cours...</p>";
+    div.innerHTML = "Chargement...";
     db.collection("historique").where("uid", "==", currentUser.uid).limit(20).get().then((snap) => {
-          div.innerHTML = ""; let projects = [];
-          snap.forEach((doc) => { projects.push({ id: doc.id, ...doc.data() }); });
-          projects.sort((a, b) => { let dateA = a.date ? a.date.seconds : 0; let dateB = b.date ? b.date.seconds : 0; return dateB - dateA; });
-          if(projects.length === 0) { div.innerHTML = "<p style='text-align:center; color:#999;'>Aucun projet trouvé.</p>"; return; }
-          projects.forEach((d) => {
+          div.innerHTML = "";
+          snap.forEach((doc) => { 
+              let d = doc.data();
               let dateStr = d.date && d.date.seconds ? new Date(d.date.seconds * 1000).toLocaleDateString('fr-FR') : "Date inconnue";
-              div.innerHTML += `<div class="history-card"><div style="text-align:left;"><h4 style="margin:0; color:#004085; font-size:16px;">👤 ${d.client || "Client Inconnu"}</h4><small style="color:#777; font-size:12px;">📅 ${dateStr} | ${d.items ? d.items.length : 0} éléments</small></div><div style="display:flex; gap:5px;"><button class="btn-load" onclick="restoreDevis('${d.id}')" title="Ouvrir">📂</button><button class="btn-delete" onclick="deleteHistory('${d.id}')" title="Supprimer">🗑️</button></div></div>`;
+              div.innerHTML += `<div class="history-card"><div style="text-align:left;"><h4>👤 ${d.client || "Client"}</h4><small>📅 ${dateStr}</small></div><div style="display:flex; gap:5px;"><button class="btn-load" onclick="restoreDevis('${doc.id}')">📂</button><button class="btn-delete" onclick="deleteHistory('${doc.id}')">🗑️</button></div></div>`;
           });
       });
 }
@@ -92,46 +89,23 @@ window.saveCurrentDevis = function() { if(!isSubscribed) return alert("Expiré")
 window.restoreDevis = function(id) { if(!isSubscribed) return; db.collection("historique").doc(id).get().then(doc => { if(doc.exists) { devis = doc.data().items; updateUI(); calculateTotalDevis(); switchMode('calc'); } }); };
 window.deleteHistory = function(id) { if(confirm("Supprimer ?")) db.collection("historique").doc(id).delete().then(()=>loadHistory()); };
 
-function loadLogo(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) { document.getElementById('logoImage').src = e.target.result; document.getElementById('logoImage').style.display = 'block'; document.getElementById('logoText').style.display = 'none'; }
-        reader.readAsDataURL(file);
-    }
-}
-
-// === DATABASE (PRIX) ===
+// === DATABASE (PRIX) - NETTOYÉE ===
 let defaultDatabase = { 
-    // Standard
     "p_67103": 200, "p_67104": 120, "p_67105": 120, "p_67106": 120, "p_Rail": 80, "p_67114": 90, 
     "p_40402": 120, "p_40404": 200, "p_40107": 30, "p_40112": 120, "p_40100": 100, 
-    "p_40121": 100, "p_40154": 100, "p_40134": 80, "p_40166": 60, 
-    "p_Traverse40104": 120,
-    
-    // Volet & Store
+    "p_40121": 100, "p_40154": 100, "p_40134": 80, "p_40166": 60, "p_Traverse40104": 120,
     "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, "p_Axe_Store": 40, 
     "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, 
     
-    // STORE EXTRUDÉ
-    "p_Lame_Extrude": 180, 
-    "p_Lame_S": 50,        
-    "p_Axe60": 55, 
-    
-    // Accessoires
     "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, 
     "a_Joint_Brosse": 0.500, "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, 
     "a_Ecer_Danimo_G": 0.050, "a_Ecer_Danimo_P": 0.050, "a_Ecer_Tall_7did": 2, 
     "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.500, "a_Joint_A36": 0.500, 
     "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, 
     "a_Joint_Vitrage_242": 0.500, "a_Angle_Parclose": 0.500, 
-    
-    // Moteurs
     "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, "a_Axe_Rallonge": 10, 
     "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.500, "a_Joint_Brosse_6": 0.500, 
     "a_Bochon_55": 0.500, "a_Bochon_39": 0.500, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.500, 
-    "a_Moteur_Extrude": 180, 
-
     "a_Joint_Batman_247": 0.800, "v_ballar": 45 
 };
 
@@ -164,8 +138,6 @@ window.switchMode = function(m) {
 window.toggleFixOption = function() {
     const p = document.getElementById('productType').value;
     const container = document.getElementById('fixOptionContainer');
-    
-    // Fixe pour tout sauf Beb
     if (p.includes('ouvrant') && !p.includes('beb')) { container.style.display = 'flex'; } 
     else { container.style.display = 'none'; document.getElementById('hasFix').checked = false; toggleFixInput(); }
 }
@@ -179,18 +151,11 @@ window.addItemToDevis = function() {
     const q = parseInt(document.getElementById('quantite').value);
     const c = document.getElementById('couleur');
     const hasFix = document.getElementById('hasFix').checked;
-    
     let fs = 0, fp = 'bottom';
     if(hasFix) { fs = parseFloat(document.getElementById('fixSize').value); fp = document.getElementById('fixPosition').value; }
     if (isNaN(l) || isNaN(h) || isNaN(q)) return;
     if (hasFix) { if ((fp === 'top' || fp === 'bottom') && fs >= h) { alert("Erreur: Fixe > Hauteur"); return; } if ((fp === 'left' || fp === 'right') && fs >= l) { alert("Erreur: Fixe > Largeur"); return; } }
-    
-    devis.push({ 
-        product: p.value, productName: p.options[p.selectedIndex].text, 
-        L_cm: l, H_cm: h, Q: q, 
-        colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text, 
-        hasFix: hasFix, fixSize: fs, fixPos: fp
-    });
+    devis.push({ product: p.value, productName: p.options[p.selectedIndex].text, L_cm: l, H_cm: h, Q: q, colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text, hasFix: hasFix, fixSize: fs, fixPos: fp });
     updateUI();
 }
 
@@ -224,33 +189,6 @@ function generateCutData(calculateMetersOnly = false) {
 
         if (it.product === "monobloc") {
             addPiece("p_Caisson_Mono", L - 1.2, 1 * Q); addPiece("p_Axe40", L - 4, 1 * Q); addPiece("p_Glissiere", H - 15.5, 2 * Q); addPiece("p_Lame39", L - 7, Math.ceil((H - 10) / 3.9) * Q); addPiece("p_Lame39", L - 7, 1 * Q);
-        } 
-        else if (it.product === "store_extrude") {
-            // === STORE EXTRUDÉ (STANDARD 3 + 1 S) ===
-            // Largeur comme Encastré : L + 5
-            let largeurLame = L + 5; // A vérifier selon ton usage, mais c'est standard store
-            if(L > 250) largeurLame = L; // Ajustement si besoin
-
-            addPiece("p_Glissiere", H - 0, 2 * Q); // Glissiere 50 Standard
-            
-            // AXE 60 : Même mesure que Lame Finale (L - 7 selon discussion)
-            addPiece("p_Axe60", L - 7, 1 * Q); 
-            addPiece("p_Lame_Finale", L - 7, 1 * Q);
-
-            // CALCUL PATTERN (3 Lame Extrude + 1 Lame S)
-            // Lame Extrude = 5.5cm | Lame S = 0.5cm
-            let patternHeight = (3 * 5.5) + 0.5; // = 17cm
-            let heightToFill = H - 20; // On enlève le coffre/enroulement
-            if(heightToFill < 0) heightToFill = 0;
-
-            let nbPatterns = Math.ceil(heightToFill / patternHeight);
-            
-            let nbLameS = nbPatterns;
-            let nbLameExt = nbPatterns * 3;
-
-            addPiece("p_Lame_Extrude", largeurLame, nbLameExt * Q);
-            addPiece("p_Lame_S", largeurLame, nbLameS * Q);
-
         } else if(it.product === "coulissant") {
             addPiece("p_67103", H+7, 2*Q); addPiece("p_67103", L+7, 2*Q); addPiece("p_67104", H-6.5, 2*Q); addPiece("p_67105", H-6.5, 2*Q); addPiece("p_67106", (L-15.5)/2, 4*Q); addPiece("p_Rail", L-8, 2*Q); addPiece("p_67114", (H-6.5)-11, 4*Q); addPiece("p_67114", ((L-15.5)/2)-1, 4*Q);
         } else if(it.product.includes("ouvrant")) {
@@ -325,34 +263,33 @@ window.calculateTotalDevis = function() {
 
         if (it.product === "monobloc") {
             mat.a_Moteur_Store_40 += 1 * Q; mat.a_Tirant_Mono += (L > 120 ? 3 : 2) * Q; mat.a_Bochon_39 += Math.ceil((H - 10) / 3.9 / 2) * 2 * Q; mat.a_Joint_Brosse_5 += (L / 100) * Q; mat.a_Joint_Brosse_6 += ((H - 15.5) * 2 / 100) * Q; mat.a_Kit_Acc_Mono += 1 * Q; 
-        } else if (it.product === "store_extrude") {
-            // === ACCESSOIRES STORE EXTRUDÉ ===
-            let patternHeight = (3 * 5.5) + 0.5;
-            let nbPatterns = Math.ceil((H - 20) / patternHeight);
-            let nbLamesTotal = nbPatterns * (3 + 1); // Total Lames (3 Ext + 1 S)
-
-            mat.a_Moteur_Extrude += 1 * Q;
-            // Pas de Verrou (supprimé)
-            mat.a_Bochon_55 += (nbLamesTotal * 2) * Q; // 2 bouchons par lame
-            mat.a_Joint_Brosse_6 += (H * 2 / 100) * Q;
-
         } else if (it.product === "coulissant") {
             mat.a_Gallet += 4*Q; mat.a_Fermeture += 2*Q; mat.a_Gache_Fermeture += 2*Q; mat.a_Kit_Etancheite += 1*Q; mat.a_Joint_Brosse += ((((workingH-6.5)*2) + (workingH-6.5) + (((L-15.5)/2)*2)) / 100) * Q; mat.a_Ecer_67103 += 4*Q; 
             mat.a_Ecer_Danimo_P += 4*Q; // CADRE SEULEMENT
         } else if (it.product.includes("ouvrant")) {
             let is2V = it.product.includes("2v");
-            mat.a_Ecer_Danimo_P += 4 * Q; // CADRE (P Model)
+            mat.a_Ecer_Danimo_P += 4 * Q; // CADRE
             if (is2V) { mat.a_Paumelle += 4 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Danimo_G += 8 * Q; mat.a_Ecer_Font += 4 * Q; mat.a_Ecer_Tall_7did += 4 * Q; mat.a_Angle_Parclose += 8 * Q; mat.a_Bochon_112 += 2 * Q; mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((workingH + workingL) * 4 / 100) * Q; } 
             else { mat.a_Paumelle += 2 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 4 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; }
         } else if (it.product === "beb1v") {
             mat.a_Paumelle += 4 * Q; mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 2 * Q; mat.a_Ecer_Danimo_P += 2 * Q; mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q; 
         } else if (it.product === "beb2v") {
+            // === ACCESSOIRES PORTE 2V (CORRIGÉ & VALIDÉ) ===
             mat.a_Paumelle += 8 * Q; 
             mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q;
             mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Bochon_112 += 2 * Q;
-            mat.a_Ecer_Danimo_P += 3 * Q; mat.a_Ecer_Danimo_G += 3 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q;
+            
+            mat.a_Ecer_Danimo_P += 3 * Q; // 3 P Model
+            mat.a_Ecer_Danimo_G += 3 * Q; // 3 G Model
+            mat.a_Ecer_Font += 2 * Q;     // 2 Font
+            mat.a_Ecer_Tall_7did += 2 * Q;// 2 Tall
+
             mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q;
             mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q;
+        } else if (it.product.includes("store")) {
+            let w = (it.product==="store_apparent") ? L-3 : L+5;
+            addPiece("p_Glissiere", H+5, 2*Q); addPiece("p_Lame55", w, Math.floor(H/5.5)*Q); addPiece("p_Lame_Finale", w, 1*Q); addPiece("p_Axe_Store", w, 1*Q);
+            mat.a_Moteur_Store_55 += 1 * Q; mat.a_Tirant += (L > 120 ? 3 : 2) * Q; mat.a_Bochon_55 += Math.ceil(H/5.5/2)*2*Q; mat.a_Axe_Rallonge += 1 * Q; mat.a_Joint_Brosse_5 += (L / 100) * Q; mat.a_Joint_Brosse_6 += (H * 2 / 100) * Q; 
         }
     }
 
@@ -403,11 +340,7 @@ function drawWindowSVG(item, index) {
     
     if (type.includes('store')) {
         svgContent += `<rect x="10" y="5" width="${w}" height="15" fill="#333" />`;
-        let step = 10;
-        for(let i=25; i<h; i+=step) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
-        if(type === 'store_extrude') {
-            svgContent += `<text x="${10+w/2}" y="${10+h/2}" fill="red" font-size="10" text-anchor="middle">EXTRUDÉ (3+1 S)</text>`;
-        }
+        for(let i=25; i<h; i+=10) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
     }
     else if (type === 'beb1v') {
         svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${w-10}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
@@ -460,17 +393,14 @@ function calculateDebit() {
 }
 
 function renderFacture() { 
-    let tb = document.querySelector("#facture-table tbody"); 
-    tb.innerHTML = "";
+    let tb = document.querySelector("#facture-table tbody"); tb.innerHTML = "";
     let marge = parseFloat(document.getElementById('margePercent').value) || 0;
-    let multiplier = 1 + (marge / 100);
     devis.forEach(item => {
         let prixUnit = (100 + (item.L_cm * item.H_cm * 0.08)) * multiplier; 
         let totalLigne = prixUnit * item.Q;
-        tb.innerHTML += `<tr><td style="text-align:left; font-weight:bold;">${item.productName} <br><span style="font-size:12px; color:#666;">Dim: ${item.L_cm} x ${item.H_cm} | Coul: ${item.colorName}</span></td><td>${item.Q}</td><td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" style="width:100%; border:none; text-align:center;" onchange="updateFactureTotal()"></td><td class="facture-total">${totalLigne.toFixed(3)}</td></tr>`;
+        tb.innerHTML += `<tr><td style="text-align:left; font-weight:bold;">${item.productName} <br><span style="font-size:12px; color:#666;">Dim: ${item.L_cm} x ${item.H_cm} | Coul: ${item.colorName}</span></td><td>${item.Q}</td><td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" onchange="updateFactureTotal()"></td><td class="facture-total">${totalLigne.toFixed(3)}</td></tr>`;
     });
     updateFactureTotal();
-    document.getElementById('factureDate').valueAsDate = new Date();
 }
 
 function updateFactureTotal() { 
