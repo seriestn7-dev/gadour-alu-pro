@@ -101,8 +101,34 @@ function loadLogo(event) {
     }
 }
 
-// === DATABASE & CALCULS ===
-let defaultDatabase = { "p_67103": 200, "p_67104": 120, "p_67105": 120, "p_67106": 120, "p_Rail": 80, "p_67114": 90, "p_40402": 120, "p_40404": 200, "p_40107": 30, "p_40112": 120, "p_40100": 100, "p_40121": 100, "p_40154": 100, "p_40134": 80, "p_40166": 60, "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, "p_Axe_Store": 40, "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, "p_Traverse40104": 120, "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, "a_Joint_Brosse": 0.500, "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, "a_Ecer_Danimo_G": 0.050, "a_Ecer_Danimo_P": 0.050, "a_Ecer_Tall_7did": 2, "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.500, "a_Joint_A36": 0.500, "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, "a_Joint_Vitrage_242": 0.500, "a_Angle_Parclose": 0.500, "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, "a_Axe_Rallonge": 10, "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.500, "a_Joint_Brosse_6": 0.500, "a_Bochon_55": 0.500, "a_Bochon_39": 0.500, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.500, "a_Joint_Batman_247": 0.800, "v_ballar": 45 };
+// === DATABASE ===
+let defaultDatabase = { 
+    // Standard
+    "p_67103": 200, "p_67104": 120, "p_67105": 120, "p_67106": 120, "p_Rail": 80, "p_67114": 90, 
+    "p_40402": 120, "p_40404": 200, "p_40107": 30, "p_40112": 120, "p_40100": 100, 
+    "p_40121": 100, "p_40154": 100, "p_40134": 80, "p_40166": 60, 
+    "p_Traverse40104": 120,
+    
+    // Volet & Store
+    "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, "p_Axe_Store": 40, "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, 
+    
+    // STORE EXTRUDÉ (NOUVEAU)
+    "p_Lame_Extrude": 180, // Lame 55 Extrudé
+    "p_Lame_S": 50,        // Lame S (Security)
+    "p_Lame_Finale_Extrude": 120, 
+    "p_Axe60": 55, 
+    "p_Glissiere_Extrude": 70, 
+
+    // Accessoires
+    "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, "a_Joint_Brosse": 0.500, "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, "a_Ecer_Danimo_G": 0.050, "a_Ecer_Danimo_P": 0.050, "a_Ecer_Tall_7did": 2, "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.500, "a_Joint_A36": 0.500, "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, "a_Joint_Vitrage_242": 0.500, "a_Angle_Parclose": 0.500, 
+    
+    // Moteurs
+    "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, "a_Axe_Rallonge": 10, "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.500, "a_Joint_Brosse_6": 0.500, "a_Bochon_55": 0.500, "a_Bochon_39": 0.500, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.500, "a_Joint_Batman_247": 0.800, "v_ballar": 45,
+    
+    // ACC EXTRUDÉ
+    "a_Moteur_Extrude": 180, "a_Verrou_Securite": 15, "a_Bochon_Lateral": 0.200
+};
+
 let database = {}; const toulBarra = 650; const CUT_MARGIN = 5; let devis = [];
 
 function loadPrices() { const s=localStorage.getItem('gadourAluPrices'); database=s?{...defaultDatabase,...JSON.parse(s)}:{...defaultDatabase}; renderPricesTable(); }
@@ -132,7 +158,15 @@ window.switchMode = function(m) {
 window.toggleFixOption = function() {
     const p = document.getElementById('productType').value;
     const container = document.getElementById('fixOptionContainer');
-    // CORRECTION : Pas de Fixe pour le Beb 1V et Beb 2V
+    const extrudeOption = document.getElementById('storeExtrudeOption');
+    
+    // GESTION OPTION STORE EXTRUDÉ
+    if(p === 'store_extrude') {
+        extrudeOption.style.display = 'block';
+    } else {
+        extrudeOption.style.display = 'none';
+    }
+
     if (p.includes('ouvrant') && !p.includes('beb')) { container.style.display = 'flex'; } 
     else { container.style.display = 'none'; document.getElementById('hasFix').checked = false; toggleFixInput(); }
 }
@@ -146,11 +180,25 @@ window.addItemToDevis = function() {
     const q = parseInt(document.getElementById('quantite').value);
     const c = document.getElementById('couleur');
     const hasFix = document.getElementById('hasFix').checked;
+    
+    // Option Lame S
+    let sFreq = 0;
+    if(p.value === 'store_extrude') {
+        sFreq = parseInt(document.getElementById('lameSFreq').value);
+    }
+
     let fs = 0, fp = 'bottom';
     if(hasFix) { fs = parseFloat(document.getElementById('fixSize').value); fp = document.getElementById('fixPosition').value; }
     if (isNaN(l) || isNaN(h) || isNaN(q)) return;
     if (hasFix) { if ((fp === 'top' || fp === 'bottom') && fs >= h) { alert("Erreur: Fixe > Hauteur"); return; } if ((fp === 'left' || fp === 'right') && fs >= l) { alert("Erreur: Fixe > Largeur"); return; } }
-    devis.push({ product: p.value, productName: p.options[p.selectedIndex].text, L_cm: l, H_cm: h, Q: q, colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text, hasFix: hasFix, fixSize: fs, fixPos: fp });
+    
+    devis.push({ 
+        product: p.value, productName: p.options[p.selectedIndex].text, 
+        L_cm: l, H_cm: h, Q: q, 
+        colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text, 
+        hasFix: hasFix, fixSize: fs, fixPos: fp,
+        sFreq: sFreq // Stocker la frequence (3 ou 5)
+    });
     updateUI();
 }
 
@@ -158,7 +206,8 @@ function updateUI() {
     let tb = document.querySelector("#devis-items tbody"); tb.innerHTML = "";
     devis.forEach((item, i) => {
         let fix = item.hasFix ? `Fixe ${item.fixPos} (${item.fixSize})` : '-';
-        tb.innerHTML += `<tr><td>${item.Q}</td><td>${item.productName}</td><td>${item.colorName}</td><td>${item.L_cm}x${item.H_cm}</td><td>${fix}</td><td><button onclick="devis.splice(${i},1);updateUI()" style="color:red">X</button></td></tr>`;
+        let detail = item.product === 'store_extrude' ? `(1 S / ${item.sFreq})` : fix;
+        tb.innerHTML += `<tr><td>${item.Q}</td><td>${item.productName}</td><td>${item.colorName}</td><td>${item.L_cm}x${item.H_cm}</td><td>${detail}</td><td><button onclick="devis.splice(${i},1);updateUI()" style="color:red">X</button></td></tr>`;
     });
 }
 window.clearDevis = function() { if(confirm("Vider?")) { devis = []; updateUI(); document.getElementById('total-result').innerHTML=''; } }
@@ -184,6 +233,32 @@ function generateCutData(calculateMetersOnly = false) {
 
         if (it.product === "monobloc") {
             addPiece("p_Caisson_Mono", L - 1.2, 1 * Q); addPiece("p_Axe40", L - 4, 1 * Q); addPiece("p_Glissiere", H - 15.5, 2 * Q); addPiece("p_Lame39", L - 7, Math.ceil((H - 10) / 3.9) * Q); addPiece("p_Lame39", L - 7, 1 * Q);
+        } 
+        else if (it.product === "store_extrude") {
+            // === STORE EXTRUDÉ AVEC LAME S ===
+            // Largeur comme Encastré : L + 5
+            let largeurLame = L + 5; 
+            
+            addPiece("p_Glissiere_Extrude", H - 0, 2 * Q);
+            addPiece("p_Axe60", L - 4, 1 * Q); 
+            addPiece("p_Lame_Finale_Extrude", largeurLame, 1 * Q);
+
+            // CALCUL PATTERN (Lame Std + Lame S)
+            // Lame Std = 5.5cm | Lame S = 0.5cm
+            let ratio = it.sFreq; // 3 ou 5
+            let patternHeight = (ratio * 5.5) + 0.5; // Hauteur d'un bloc (ex: 3*5.5 + 0.5 = 17cm)
+            
+            let heightToFill = H - 20; // On enlève le coffre/enroulement
+            if(heightToFill < 0) heightToFill = 0;
+
+            let nbPatterns = Math.ceil(heightToFill / patternHeight);
+            
+            let nbLameS = nbPatterns;
+            let nbLameStd = nbPatterns * ratio;
+
+            addPiece("p_Lame_Extrude", largeurLame, nbLameStd * Q);
+            addPiece("p_Lame_S", largeurLame, nbLameS * Q);
+
         } else if(it.product === "coulissant") {
             addPiece("p_67103", H+7, 2*Q); addPiece("p_67103", L+7, 2*Q); addPiece("p_67104", H-6.5, 2*Q); addPiece("p_67105", H-6.5, 2*Q); addPiece("p_67106", (L-15.5)/2, 4*Q); addPiece("p_Rail", L-8, 2*Q); addPiece("p_67114", (H-6.5)-11, 4*Q); addPiece("p_67114", ((L-15.5)/2)-1, 4*Q);
         } else if(it.product.includes("ouvrant")) {
@@ -196,13 +271,10 @@ function generateCutData(calculateMetersOnly = false) {
             if (is2V || profilOuvrant !== "p_40404") { addPiece("p_40166", hFarda - 11, (is2V ? 4 : 2) * Q); addPiece("p_40166", wFarda - 11, (is2V ? 4 : 2) * Q); }
             if (!is2V) addPiece("p_40107", (hFarda - 29.2) / 2, 2 * Q);
         } else if(it.product === "beb1v") {
-            // CORRECTION PORTE: H + 3.5 (Pas 7) | L + 7
             addPiece("p_40402", finalH + 3.5, 2*Q); addPiece("p_40402", finalL + 7, 1*Q); 
             addPiece("p_40100", finalH-2.5, 2*Q); addPiece("p_40100", finalL-4.2, 1*Q); addPiece("p_40166", finalL-11, 4*Q); addPiece("p_40166", ((finalH-2.5)-12.5)/2-4, 4*Q); addPiece("p_40121", finalL-9.8, 1*Q); addPiece("p_40154", finalL-9.8, 1*Q);
         } else if(it.product === "beb2v") {
-            // === NOUVEAU: PORTE 2V ===
-            let hFarda = finalH - 2.5;
-            let wFarda = (finalL - 4.5) / 2;
+            let hFarda = finalH - 2.5; let wFarda = (finalL - 4.5) / 2;
             addPiece("p_40402", finalH + 3.5, 2 * Q); addPiece("p_40402", finalL + 7, 1 * Q);
             addPiece("p_40100", hFarda, 4 * Q); addPiece("p_40100", wFarda, 2 * Q);
             addPiece("p_40112", finalH - 6, 1 * Q);
@@ -261,6 +333,19 @@ window.calculateTotalDevis = function() {
 
         if (it.product === "monobloc") {
             mat.a_Moteur_Store_40 += 1 * Q; mat.a_Tirant_Mono += (L > 120 ? 3 : 2) * Q; mat.a_Bochon_39 += Math.ceil((H - 10) / 3.9 / 2) * 2 * Q; mat.a_Joint_Brosse_5 += (L / 100) * Q; mat.a_Joint_Brosse_6 += ((H - 15.5) * 2 / 100) * Q; mat.a_Kit_Acc_Mono += 1 * Q; 
+        } else if (it.product === "store_extrude") {
+            // === ACCESSOIRES STORE EXTRUDÉ ===
+            let ratio = it.sFreq || 3;
+            let patternHeight = (ratio * 5.5) + 0.5;
+            let nbPatterns = Math.ceil((H - 20) / patternHeight);
+            
+            let nbLamesTotal = nbPatterns * (ratio + 1); // Total Lames (Std + S)
+
+            mat.a_Moteur_Extrude += 1 * Q;
+            mat.a_Verrou_Securite += (L > 150 ? 3 : 2) * Q;
+            mat.a_Bochon_Lateral += (nbLamesTotal * 2) * Q; // 2 bouchons par lame (Std et S)
+            mat.a_Joint_Brosse_6 += (H * 2 / 100) * Q;
+
         } else if (it.product === "coulissant") {
             mat.a_Gallet += 4*Q; mat.a_Fermeture += 2*Q; mat.a_Gache_Fermeture += 2*Q; mat.a_Kit_Etancheite += 1*Q; mat.a_Joint_Brosse += ((((workingH-6.5)*2) + (workingH-6.5) + (((L-15.5)/2)*2)) / 100) * Q; mat.a_Ecer_67103 += 4*Q; 
             mat.a_Ecer_Danimo_P += 4*Q; // CADRE SEULEMENT
@@ -272,17 +357,10 @@ window.calculateTotalDevis = function() {
         } else if (it.product === "beb1v") {
             mat.a_Paumelle += 4 * Q; mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 2 * Q; mat.a_Ecer_Danimo_P += 2 * Q; mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q; 
         } else if (it.product === "beb2v") {
-            // === ACCESSOIRES PORTE 2V (CORRECTION) ===
             mat.a_Paumelle += 8 * Q; 
             mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q;
             mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Bochon_112 += 2 * Q;
-            
-            // CORRECTION DEMANDEE :
-            mat.a_Ecer_Danimo_P += 3 * Q; // 3 P Model
-            mat.a_Ecer_Danimo_G += 3 * Q; // 3 G Model
-            mat.a_Ecer_Font += 2 * Q;     // 2 Font
-            mat.a_Ecer_Tall_7did += 2 * Q;// 2 Tall (Tôle)
-
+            mat.a_Ecer_Danimo_P += 3 * Q; mat.a_Ecer_Danimo_G += 3 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q;
             mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q;
             mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q;
         }
@@ -292,9 +370,7 @@ window.calculateTotalDevis = function() {
     for(let k in mat) { if(mat[k]>0) { let price = database[k] || 0; let cost = mat[k] * price; totalAccessoires += cost; html += `<tr><td>${k.replace('a_','')}</td><td>${mat[k].toFixed(2)}</td><td>${cost.toFixed(3)}</td></tr>`; } }
     html += `<tr><td colspan="3" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Accessoires: ${totalAccessoires.toFixed(3)} TND</td></tr></tbody></table>`;
     
-    // Calcul Vitrage (Simplifié pour affichage)
     html += `<h3>3. Vitrage</h3><p>Calcul vitrage inclus dans total...</p>`;
-
     let grandTotal = totalProfiles + totalAccessoires + (tot_surf * (database['v_ballar'] || 45));
     let margePercent = parseFloat(document.getElementById('margePercent').value) || 0;
     let finalTotal = grandTotal * (1 + margePercent/100);
@@ -314,37 +390,32 @@ function drawWindowSVG(item, index) {
     const w = L * scale; const h = H * scale;
     let svgContent = "";
     
-    // === DESSIN COMPLET AVEC DETAILS ===
     let yStart = 10, xStart = 10;
     let hOuv = h, wOuv = w;
 
     if(item.hasFix) {
         let fixS = item.fixSize * scale;
-        // DESSIN DU CADRE
         svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
-        
         if (item.fixPos === 'top') {
             svgContent += `<line x1="10" y1="${10+fixS}" x2="${10+w}" y2="${10+fixS}" stroke="#005a9c" stroke-width="3" />`;
-            svgContent += `<text x="${10+w/2}" y="${10+fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
             yStart = 10 + fixS; hOuv = h - fixS;
         } else if (item.fixPos === 'bottom') {
             svgContent += `<line x1="10" y1="${10+h-fixS}" x2="${10+w}" y2="${10+h-fixS}" stroke="#005a9c" stroke-width="3" />`;
-            svgContent += `<text x="${10+w/2}" y="${10+h-fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
             hOuv = h - fixS;
         }
     } else {
-        // DESSIN DU CADRE SIMPLE (SI PAS DE FIX)
         if(type.includes('beb')) {
-             // Porte sans barre en bas
              svgContent = `<polyline points="10,${10+h} 10,10 ${10+w},10 ${10+w},${10+h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
         } else {
              svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
         }
     }
     
-    if (type === 'monobloc') {
+    if (type.includes('store')) {
         svgContent += `<rect x="10" y="5" width="${w}" height="15" fill="#333" />`;
-        for(let i=25; i<h; i+=10) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
+        let step = (type === 'store_extrude') ? (10 + (item.sFreq == 3 ? 10 : 20)) : 10;
+        for(let i=25; i<h; i+=step) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
+        if(type === 'store_extrude') svgContent += `<text x="${10+w/2}" y="${10+h/2}" fill="red" font-size="10">EXTRUDÉ (1/${item.sFreq})</text>`;
     }
     else if (type === 'beb1v') {
         svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${w-10}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
@@ -352,15 +423,11 @@ function drawWindowSVG(item, index) {
         svgContent += `<rect x="${10+5}" y="${yStart+hOuv-25}" width="${w-10}" height="20" fill="#eee" stroke="#28a745" />`;
     }
     else if (type === 'beb2v') {
-        // Dessin Porte 2V
         let wHalf = (w-10)/2;
-        // Leaf 1
         svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${wHalf}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
         svgContent += `<rect x="${10+5}" y="${yStart+hOuv-25}" width="${wHalf}" height="20" fill="#eee" stroke="#28a745" />`;
-        // Leaf 2
         svgContent += `<rect x="${10+5+wHalf}" y="${yStart+5}" width="${wHalf}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
         svgContent += `<rect x="${10+5+wHalf}" y="${yStart+hOuv-25}" width="${wHalf}" height="20" fill="#eee" stroke="#28a745" />`;
-        // Handle center
         svgContent += `<circle cx="${10+5+wHalf}" cy="${yStart+hOuv/2}" r="3" fill="black" />`; 
     }
     else if (type.includes('ouvrant')) {
@@ -388,12 +455,12 @@ function calculateDebit() {
     let output = "";
     for (let ref in cutData) {
         const data = cutData[ref];
-        output += `<div class="bar-container"><div class="bar-title"><span>${ref.replace('p_','')} (${data.bars.length} Barres)</span><span style="color:#d63384;">Total: ${totalPieces} pcs</span></div>`;
+        output += `<div class="bar-container"><div class="bar-title"><span>${ref.replace('p_','')} (${data.bars.length} Barres)</span><span style="color:#d63384;">Total: ${data.cuts.length} pcs</span></div>`;
         data.bars.forEach((b, idx) => {
             output += `<div class="bar-visual">`;
             b.cuts.forEach(c => { output += `<div class="cut-piece" style="width:${(c/toulBarra)*100}%">${c.toFixed(1)}</div>`; });
             if(b.rem > 0) output += `<div class="waste-piece" style="width:${(b.rem/toulBarra)*100}%" title="Restant: ${b.rem.toFixed(1)}"></div>`;
-            output += `</div><div style="font-size:12px; text-align:right; color:red;">Chute Net: ${b.rem.toFixed(1)} cm</div>`;
+            output += `</div>`;
         });
         output += `</div>`;
     }
@@ -418,15 +485,12 @@ function updateFactureTotal() {
     let rows = document.querySelectorAll("#facture-table tbody tr");
     let grandTotal = 0;
     rows.forEach(row => {
-        const qte = parseFloat(row.cells[1].innerText); const puInput = row.querySelector('.facture-pu');
-        const pu = parseFloat(puInput.value); const totalCell = row.querySelector('.facture-total');
-        let totalLigne = 0; if (!isNaN(qte) && !isNaN(pu)) totalLigne = qte * pu;
-        totalCell.innerText = totalLigne.toFixed(3); grandTotal += totalLigne;
+        const qte = parseFloat(row.cells[1].innerText); const pu = parseFloat(row.querySelector('.facture-pu').value);
+        if (!isNaN(qte) && !isNaN(pu)) { row.querySelector('.facture-total').innerText = (qte * pu).toFixed(3); grandTotal += qte * pu; }
     });
     document.getElementById('facture-total-display').innerText = grandTotal.toFixed(3);
 }
 
-// === DARK MODE ===
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
     const isDark = document.body.classList.contains('dark-mode');
