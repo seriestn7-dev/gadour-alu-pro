@@ -203,26 +203,11 @@ function generateCutData(calculateMetersOnly = false) {
             // === NOUVEAU: PORTE 2V ===
             let hFarda = finalH - 2.5;
             let wFarda = (finalL - 4.5) / 2;
-            
-            // Cadre
-            addPiece("p_40402", finalH + 3.5, 2 * Q); 
-            addPiece("p_40402", finalL + 7, 1 * Q);
-            
-            // Fardas (4 H + 2 L)
-            addPiece("p_40100", hFarda, 4 * Q);
-            addPiece("p_40100", wFarda, 2 * Q);
-            
-            // Battement
+            addPiece("p_40402", finalH + 3.5, 2 * Q); addPiece("p_40402", finalL + 7, 1 * Q);
+            addPiece("p_40100", hFarda, 4 * Q); addPiece("p_40100", wFarda, 2 * Q);
             addPiece("p_40112", finalH - 6, 1 * Q);
-            
-            // Remplissage (Plinthe + Traverse) -> 2 de chaque
-            addPiece("p_40121", wFarda - 10, 2 * Q);
-            addPiece("p_40154", wFarda - 10, 2 * Q);
-            
-            // Parclose (Horizontal 4pcs, Vertical 8pcs split)
-            addPiece("p_40166", wFarda - 11, 4 * Q);
-            addPiece("p_40166", (hFarda - 12.5)/2 - 4, 8 * Q);
-
+            addPiece("p_40121", wFarda - 10, 2 * Q); addPiece("p_40154", wFarda - 10, 2 * Q);
+            addPiece("p_40166", wFarda - 11, 4 * Q); addPiece("p_40166", (hFarda - 12.5)/2 - 4, 8 * Q);
         } else if(it.product.includes("store")) {
             let w = (it.product==="store_apparent") ? L-3 : L+5;
             addPiece("p_Glissiere", H+5, 2*Q); addPiece("p_Lame55", w, Math.floor(H/5.5)*Q); addPiece("p_Lame_Finale", w, 1*Q); addPiece("p_Axe_Store", w, 1*Q);
@@ -287,17 +272,17 @@ window.calculateTotalDevis = function() {
         } else if (it.product === "beb1v") {
             mat.a_Paumelle += 4 * Q; mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 2 * Q; mat.a_Ecer_Danimo_P += 2 * Q; mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q; 
         } else if (it.product === "beb2v") {
-            // === ACCESSOIRES PORTE 2V ===
-            mat.a_Paumelle += 8 * Q; // 8 Paumelles (4 par feuille)
-            mat.a_Serrure_Cylindre += 1 * Q;
-            mat.a_Poignee_Beb += 1 * Q;
-            mat.a_Cache_Canon += 2 * Q;
-            mat.a_Kit_Vero_Semi_Fix += 1 * Q;
-            mat.a_Bochon_112 += 2 * Q;
-            mat.a_Ecer_Font += 4 * Q;
-            mat.a_Ecer_Tall_7did += 4 * Q;
-            mat.a_Ecer_Danimo_G += 4 * Q;
-            mat.a_Ecer_Danimo_P += 4 * Q;
+            // === ACCESSOIRES PORTE 2V (CORRECTION) ===
+            mat.a_Paumelle += 8 * Q; 
+            mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q;
+            mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Bochon_112 += 2 * Q;
+            
+            // CORRECTION DEMANDEE :
+            mat.a_Ecer_Danimo_P += 3 * Q; // 3 P Model
+            mat.a_Ecer_Danimo_G += 3 * Q; // 3 G Model
+            mat.a_Ecer_Font += 2 * Q;     // 2 Font
+            mat.a_Ecer_Tall_7did += 2 * Q;// 2 Tall (Tôle)
+
             mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q;
             mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q;
         }
@@ -403,7 +388,6 @@ function calculateDebit() {
     let output = "";
     for (let ref in cutData) {
         const data = cutData[ref];
-        let totalPieces = data.cuts.length;
         output += `<div class="bar-container"><div class="bar-title"><span>${ref.replace('p_','')} (${data.bars.length} Barres)</span><span style="color:#d63384;">Total: ${totalPieces} pcs</span></div>`;
         data.bars.forEach((b, idx) => {
             output += `<div class="bar-visual">`;
