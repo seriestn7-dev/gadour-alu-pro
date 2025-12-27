@@ -132,7 +132,7 @@ window.switchMode = function(m) {
 window.toggleFixOption = function() {
     const p = document.getElementById('productType').value;
     const container = document.getElementById('fixOptionContainer');
-    // CORRECTION : Pas de Fixe pour le Beb 1V
+    // CORRECTION : Pas de Fixe pour le Beb 1V et Beb 2V
     if (p.includes('ouvrant') && !p.includes('beb')) { container.style.display = 'flex'; } 
     else { container.style.display = 'none'; document.getElementById('hasFix').checked = false; toggleFixInput(); }
 }
@@ -199,6 +199,30 @@ function generateCutData(calculateMetersOnly = false) {
             // CORRECTION PORTE: H + 3.5 (Pas 7) | L + 7
             addPiece("p_40402", finalH + 3.5, 2*Q); addPiece("p_40402", finalL + 7, 1*Q); 
             addPiece("p_40100", finalH-2.5, 2*Q); addPiece("p_40100", finalL-4.2, 1*Q); addPiece("p_40166", finalL-11, 4*Q); addPiece("p_40166", ((finalH-2.5)-12.5)/2-4, 4*Q); addPiece("p_40121", finalL-9.8, 1*Q); addPiece("p_40154", finalL-9.8, 1*Q);
+        } else if(it.product === "beb2v") {
+            // === NOUVEAU: PORTE 2V ===
+            let hFarda = finalH - 2.5;
+            let wFarda = (finalL - 4.5) / 2;
+            
+            // Cadre
+            addPiece("p_40402", finalH + 3.5, 2 * Q); 
+            addPiece("p_40402", finalL + 7, 1 * Q);
+            
+            // Fardas (4 H + 2 L)
+            addPiece("p_40100", hFarda, 4 * Q);
+            addPiece("p_40100", wFarda, 2 * Q);
+            
+            // Battement
+            addPiece("p_40112", finalH - 6, 1 * Q);
+            
+            // Remplissage (Plinthe + Traverse) -> 2 de chaque
+            addPiece("p_40121", wFarda - 10, 2 * Q);
+            addPiece("p_40154", wFarda - 10, 2 * Q);
+            
+            // Parclose (Horizontal 4pcs, Vertical 8pcs split)
+            addPiece("p_40166", wFarda - 11, 4 * Q);
+            addPiece("p_40166", (hFarda - 12.5)/2 - 4, 8 * Q);
+
         } else if(it.product.includes("store")) {
             let w = (it.product==="store_apparent") ? L-3 : L+5;
             addPiece("p_Glissiere", H+5, 2*Q); addPiece("p_Lame55", w, Math.floor(H/5.5)*Q); addPiece("p_Lame_Finale", w, 1*Q); addPiece("p_Axe_Store", w, 1*Q);
@@ -262,6 +286,20 @@ window.calculateTotalDevis = function() {
             else { mat.a_Paumelle += 2 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 4 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; }
         } else if (it.product === "beb1v") {
             mat.a_Paumelle += 4 * Q; mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 2 * Q; mat.a_Ecer_Danimo_P += 2 * Q; mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q; 
+        } else if (it.product === "beb2v") {
+            // === ACCESSOIRES PORTE 2V ===
+            mat.a_Paumelle += 8 * Q; // 8 Paumelles (4 par feuille)
+            mat.a_Serrure_Cylindre += 1 * Q;
+            mat.a_Poignee_Beb += 1 * Q;
+            mat.a_Cache_Canon += 2 * Q;
+            mat.a_Kit_Vero_Semi_Fix += 1 * Q;
+            mat.a_Bochon_112 += 2 * Q;
+            mat.a_Ecer_Font += 4 * Q;
+            mat.a_Ecer_Tall_7did += 4 * Q;
+            mat.a_Ecer_Danimo_G += 4 * Q;
+            mat.a_Ecer_Danimo_P += 4 * Q;
+            mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q;
+            mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q;
         }
     }
 
@@ -290,12 +328,16 @@ function drawWindowSVG(item, index) {
     const scale = Math.min(maxS / L, maxS / H);
     const w = L * scale; const h = H * scale;
     let svgContent = "";
-    svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
     
+    // === DESSIN COMPLET AVEC DETAILS ===
     let yStart = 10, xStart = 10;
     let hOuv = h, wOuv = w;
+
     if(item.hasFix) {
         let fixS = item.fixSize * scale;
+        // DESSIN DU CADRE
+        svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+        
         if (item.fixPos === 'top') {
             svgContent += `<line x1="10" y1="${10+fixS}" x2="${10+w}" y2="${10+fixS}" stroke="#005a9c" stroke-width="3" />`;
             svgContent += `<text x="${10+w/2}" y="${10+fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
@@ -305,18 +347,36 @@ function drawWindowSVG(item, index) {
             svgContent += `<text x="${10+w/2}" y="${10+h-fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
             hOuv = h - fixS;
         }
+    } else {
+        // DESSIN DU CADRE SIMPLE (SI PAS DE FIX)
+        if(type.includes('beb')) {
+             // Porte sans barre en bas
+             svgContent = `<polyline points="10,${10+h} 10,10 ${10+w},10 ${10+w},${10+h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+        } else {
+             svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+        }
     }
     
     if (type === 'monobloc') {
         svgContent += `<rect x="10" y="5" width="${w}" height="15" fill="#333" />`;
         for(let i=25; i<h; i+=10) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
     }
-    else if (type.includes('beb')) {
-        // Dessin Porte: Pas de barre en bas (seuil)
-        svgContent = `<polyline points="10,${10+h} 10,10 ${10+w},10 ${10+w},${10+h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+    else if (type === 'beb1v') {
         svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${w-10}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
         svgContent += `<circle cx="${10+15}" cy="${yStart+hOuv/2}" r="3" fill="black" />`; 
         svgContent += `<rect x="${10+5}" y="${yStart+hOuv-25}" width="${w-10}" height="20" fill="#eee" stroke="#28a745" />`;
+    }
+    else if (type === 'beb2v') {
+        // Dessin Porte 2V
+        let wHalf = (w-10)/2;
+        // Leaf 1
+        svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${wHalf}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
+        svgContent += `<rect x="${10+5}" y="${yStart+hOuv-25}" width="${wHalf}" height="20" fill="#eee" stroke="#28a745" />`;
+        // Leaf 2
+        svgContent += `<rect x="${10+5+wHalf}" y="${yStart+5}" width="${wHalf}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
+        svgContent += `<rect x="${10+5+wHalf}" y="${yStart+hOuv-25}" width="${wHalf}" height="20" fill="#eee" stroke="#28a745" />`;
+        // Handle center
+        svgContent += `<circle cx="${10+5+wHalf}" cy="${yStart+hOuv/2}" r="3" fill="black" />`; 
     }
     else if (type.includes('ouvrant')) {
         let inset = 5; 
