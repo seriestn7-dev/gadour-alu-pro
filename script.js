@@ -159,7 +159,7 @@ function loadLogo(event) {
     }
 }
 
-// === DATABASE ===
+// === DATABASE (TABLEAU PRIX) ===
 let defaultDatabase = { "p_67103": 200, "p_67104": 120, "p_67105": 120, "p_67106": 120, "p_Rail": 80, "p_67114": 90, "p_40402": 120, "p_40404": 200, "p_40107": 30, "p_40112": 120, "p_40100": 100, "p_40121": 100, "p_40154": 100, "p_40134": 80, "p_40166": 60, "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, "p_Axe_Store": 40, "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, "p_Traverse40104": 120, "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, "a_Joint_Brosse": 0.500, "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, "a_Ecer_Danimo_G": 0.050, "a_Ecer_Danimo_P": 0.050, "a_Ecer_Tall_7did": 2, "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.500, "a_Joint_A36": 0.500, "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, "a_Joint_Vitrage_242": 0.500, "a_Angle_Parclose": 0.500, "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, "a_Axe_Rallonge": 10, "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.500, "a_Joint_Brosse_6": 0.500, "a_Bochon_55": 0.500, "a_Bochon_39": 0.500, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.500, "a_Joint_Batman_247": 0.800, "v_ballar": 45 };
 let database = {}; const toulBarra = 650; const CUT_MARGIN = 5; let devis = [];
 
@@ -226,6 +226,7 @@ function updateUI() {
 }
 window.clearDevis = function() { if(confirm("Vider?")) { devis = []; updateUI(); document.getElementById('total-result').innerHTML=''; } }
 
+// === LOGIQUE DE COUPE (DECORTIQUAGE) ===
 function generateCutData(calculateMetersOnly = false) {
     let piecesNeeded = {}; let meterage = {}; 
     const addPiece = (ref, len, q=1) => { 
@@ -317,6 +318,7 @@ function generateCutData(calculateMetersOnly = false) {
     return result;
 }
 
+// === CALCUL FINAL (SEL3A) ===
 window.calculateTotalDevis = function() {
     if (devis.length === 0) { alert("Panier Vide !"); return; }
     if(!isSubscribed) return alert("Abonnement expiré !");
@@ -382,7 +384,8 @@ window.calculateTotalDevis = function() {
             mat.a_Gache_Fermeture += 2*Q; 
             mat.a_Kit_Etancheite += 1*Q;
             mat.a_Joint_Brosse += ((((workingH-6.5)*2) + (workingH-6.5) + (((L-15.5)/2)*2)) / 100) * Q;
-            mat.a_Ecer_67103 += 4*Q; 
+            mat.a_Ecer_67103 += 4*Q;
+            mat.a_Ecer_Danimo_P += 4*Q; // 4 P-Model pour le CADRE seulement
             let gh = (workingH - 6.5) - 8.5; let gw = ((L - 15.5) / 2) - 1;
             let surf = (gh * gw * 2 * Q) / 10000; tot_surf += surf;
             v_html += `<tr><td>Fenêtre Coulissante</td><td>${2*Q}</td><td>${gh.toFixed(1)}x${gw.toFixed(1)}</td><td>${surf.toFixed(2)}</td></tr>`;
