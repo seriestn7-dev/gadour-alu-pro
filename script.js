@@ -101,7 +101,7 @@ function loadLogo(event) {
     }
 }
 
-// === DATABASE ===
+// === DATABASE (PRIX) ===
 let defaultDatabase = { 
     // Standard
     "p_67103": 200, "p_67104": 120, "p_67105": 120, "p_67106": 120, "p_Rail": 80, "p_67114": 90, 
@@ -110,23 +110,29 @@ let defaultDatabase = {
     "p_Traverse40104": 120,
     
     // Volet & Store
-    "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, "p_Axe_Store": 40, "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, 
+    "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, "p_Axe_Store": 40, 
+    "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, 
     
-    // STORE EXTRUDÉ (NOUVEAU)
-    "p_Lame_Extrude": 180, // Lame 55 Extrudé
-    "p_Lame_S": 50,        // Lame S (Security)
-    "p_Lame_Finale_Extrude": 120, 
+    // STORE EXTRUDÉ
+    "p_Lame_Extrude": 180, 
+    "p_Lame_S": 50,        
     "p_Axe60": 55, 
-    "p_Glissiere_Extrude": 70, 
-
+    
     // Accessoires
-    "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, "a_Joint_Brosse": 0.500, "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, "a_Ecer_Danimo_G": 0.050, "a_Ecer_Danimo_P": 0.050, "a_Ecer_Tall_7did": 2, "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.500, "a_Joint_A36": 0.500, "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, "a_Joint_Vitrage_242": 0.500, "a_Angle_Parclose": 0.500, 
+    "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, 
+    "a_Joint_Brosse": 0.500, "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, 
+    "a_Ecer_Danimo_G": 0.050, "a_Ecer_Danimo_P": 0.050, "a_Ecer_Tall_7did": 2, 
+    "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.500, "a_Joint_A36": 0.500, 
+    "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, 
+    "a_Joint_Vitrage_242": 0.500, "a_Angle_Parclose": 0.500, 
     
     // Moteurs
-    "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, "a_Axe_Rallonge": 10, "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.500, "a_Joint_Brosse_6": 0.500, "a_Bochon_55": 0.500, "a_Bochon_39": 0.500, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.500, "a_Joint_Batman_247": 0.800, "v_ballar": 45,
-    
-    // ACC EXTRUDÉ
-    "a_Moteur_Extrude": 180, "a_Verrou_Securite": 15, "a_Bochon_Lateral": 0.200
+    "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, "a_Axe_Rallonge": 10, 
+    "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.500, "a_Joint_Brosse_6": 0.500, 
+    "a_Bochon_55": 0.500, "a_Bochon_39": 0.500, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.500, 
+    "a_Moteur_Extrude": 180, 
+
+    "a_Joint_Batman_247": 0.800, "v_ballar": 45 
 };
 
 let database = {}; const toulBarra = 650; const CUT_MARGIN = 5; let devis = [];
@@ -158,15 +164,8 @@ window.switchMode = function(m) {
 window.toggleFixOption = function() {
     const p = document.getElementById('productType').value;
     const container = document.getElementById('fixOptionContainer');
-    const extrudeOption = document.getElementById('storeExtrudeOption');
     
-    // GESTION OPTION STORE EXTRUDÉ
-    if(p === 'store_extrude') {
-        extrudeOption.style.display = 'block';
-    } else {
-        extrudeOption.style.display = 'none';
-    }
-
+    // Fixe pour tout sauf Beb
     if (p.includes('ouvrant') && !p.includes('beb')) { container.style.display = 'flex'; } 
     else { container.style.display = 'none'; document.getElementById('hasFix').checked = false; toggleFixInput(); }
 }
@@ -181,12 +180,6 @@ window.addItemToDevis = function() {
     const c = document.getElementById('couleur');
     const hasFix = document.getElementById('hasFix').checked;
     
-    // Option Lame S
-    let sFreq = 0;
-    if(p.value === 'store_extrude') {
-        sFreq = parseInt(document.getElementById('lameSFreq').value);
-    }
-
     let fs = 0, fp = 'bottom';
     if(hasFix) { fs = parseFloat(document.getElementById('fixSize').value); fp = document.getElementById('fixPosition').value; }
     if (isNaN(l) || isNaN(h) || isNaN(q)) return;
@@ -196,8 +189,7 @@ window.addItemToDevis = function() {
         product: p.value, productName: p.options[p.selectedIndex].text, 
         L_cm: l, H_cm: h, Q: q, 
         colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text, 
-        hasFix: hasFix, fixSize: fs, fixPos: fp,
-        sFreq: sFreq // Stocker la frequence (3 ou 5)
+        hasFix: hasFix, fixSize: fs, fixPos: fp
     });
     updateUI();
 }
@@ -206,8 +198,7 @@ function updateUI() {
     let tb = document.querySelector("#devis-items tbody"); tb.innerHTML = "";
     devis.forEach((item, i) => {
         let fix = item.hasFix ? `Fixe ${item.fixPos} (${item.fixSize})` : '-';
-        let detail = item.product === 'store_extrude' ? `(1 S / ${item.sFreq})` : fix;
-        tb.innerHTML += `<tr><td>${item.Q}</td><td>${item.productName}</td><td>${item.colorName}</td><td>${item.L_cm}x${item.H_cm}</td><td>${detail}</td><td><button onclick="devis.splice(${i},1);updateUI()" style="color:red">X</button></td></tr>`;
+        tb.innerHTML += `<tr><td>${item.Q}</td><td>${item.productName}</td><td>${item.colorName}</td><td>${item.L_cm}x${item.H_cm}</td><td>${fix}</td><td><button onclick="devis.splice(${i},1);updateUI()" style="color:red">X</button></td></tr>`;
     });
 }
 window.clearDevis = function() { if(confirm("Vider?")) { devis = []; updateUI(); document.getElementById('total-result').innerHTML=''; } }
@@ -235,28 +226,29 @@ function generateCutData(calculateMetersOnly = false) {
             addPiece("p_Caisson_Mono", L - 1.2, 1 * Q); addPiece("p_Axe40", L - 4, 1 * Q); addPiece("p_Glissiere", H - 15.5, 2 * Q); addPiece("p_Lame39", L - 7, Math.ceil((H - 10) / 3.9) * Q); addPiece("p_Lame39", L - 7, 1 * Q);
         } 
         else if (it.product === "store_extrude") {
-            // === STORE EXTRUDÉ AVEC LAME S ===
+            // === STORE EXTRUDÉ (STANDARD 3 + 1 S) ===
             // Largeur comme Encastré : L + 5
-            let largeurLame = L + 5; 
-            
-            addPiece("p_Glissiere_Extrude", H - 0, 2 * Q);
-            addPiece("p_Axe60", L - 4, 1 * Q); 
-            addPiece("p_Lame_Finale_Extrude", largeurLame, 1 * Q);
+            let largeurLame = L + 5; // A vérifier selon ton usage, mais c'est standard store
+            if(L > 250) largeurLame = L; // Ajustement si besoin
 
-            // CALCUL PATTERN (Lame Std + Lame S)
-            // Lame Std = 5.5cm | Lame S = 0.5cm
-            let ratio = it.sFreq; // 3 ou 5
-            let patternHeight = (ratio * 5.5) + 0.5; // Hauteur d'un bloc (ex: 3*5.5 + 0.5 = 17cm)
+            addPiece("p_Glissiere", H - 0, 2 * Q); // Glissiere 50 Standard
             
+            // AXE 60 : Même mesure que Lame Finale (L - 7 selon discussion)
+            addPiece("p_Axe60", L - 7, 1 * Q); 
+            addPiece("p_Lame_Finale", L - 7, 1 * Q);
+
+            // CALCUL PATTERN (3 Lame Extrude + 1 Lame S)
+            // Lame Extrude = 5.5cm | Lame S = 0.5cm
+            let patternHeight = (3 * 5.5) + 0.5; // = 17cm
             let heightToFill = H - 20; // On enlève le coffre/enroulement
             if(heightToFill < 0) heightToFill = 0;
 
             let nbPatterns = Math.ceil(heightToFill / patternHeight);
             
             let nbLameS = nbPatterns;
-            let nbLameStd = nbPatterns * ratio;
+            let nbLameExt = nbPatterns * 3;
 
-            addPiece("p_Lame_Extrude", largeurLame, nbLameStd * Q);
+            addPiece("p_Lame_Extrude", largeurLame, nbLameExt * Q);
             addPiece("p_Lame_S", largeurLame, nbLameS * Q);
 
         } else if(it.product === "coulissant") {
@@ -335,15 +327,13 @@ window.calculateTotalDevis = function() {
             mat.a_Moteur_Store_40 += 1 * Q; mat.a_Tirant_Mono += (L > 120 ? 3 : 2) * Q; mat.a_Bochon_39 += Math.ceil((H - 10) / 3.9 / 2) * 2 * Q; mat.a_Joint_Brosse_5 += (L / 100) * Q; mat.a_Joint_Brosse_6 += ((H - 15.5) * 2 / 100) * Q; mat.a_Kit_Acc_Mono += 1 * Q; 
         } else if (it.product === "store_extrude") {
             // === ACCESSOIRES STORE EXTRUDÉ ===
-            let ratio = it.sFreq || 3;
-            let patternHeight = (ratio * 5.5) + 0.5;
+            let patternHeight = (3 * 5.5) + 0.5;
             let nbPatterns = Math.ceil((H - 20) / patternHeight);
-            
-            let nbLamesTotal = nbPatterns * (ratio + 1); // Total Lames (Std + S)
+            let nbLamesTotal = nbPatterns * (3 + 1); // Total Lames (3 Ext + 1 S)
 
             mat.a_Moteur_Extrude += 1 * Q;
-            mat.a_Verrou_Securite += (L > 150 ? 3 : 2) * Q;
-            mat.a_Bochon_Lateral += (nbLamesTotal * 2) * Q; // 2 bouchons par lame (Std et S)
+            // Pas de Verrou (supprimé)
+            mat.a_Bochon_55 += (nbLamesTotal * 2) * Q; // 2 bouchons par lame
             mat.a_Joint_Brosse_6 += (H * 2 / 100) * Q;
 
         } else if (it.product === "coulissant") {
@@ -413,9 +403,11 @@ function drawWindowSVG(item, index) {
     
     if (type.includes('store')) {
         svgContent += `<rect x="10" y="5" width="${w}" height="15" fill="#333" />`;
-        let step = (type === 'store_extrude') ? (10 + (item.sFreq == 3 ? 10 : 20)) : 10;
+        let step = 10;
         for(let i=25; i<h; i+=step) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
-        if(type === 'store_extrude') svgContent += `<text x="${10+w/2}" y="${10+h/2}" fill="red" font-size="10">EXTRUDÉ (1/${item.sFreq})</text>`;
+        if(type === 'store_extrude') {
+            svgContent += `<text x="${10+w/2}" y="${10+h/2}" fill="red" font-size="10" text-anchor="middle">EXTRUDÉ (3+1 S)</text>`;
+        }
     }
     else if (type === 'beb1v') {
         svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${w-10}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
