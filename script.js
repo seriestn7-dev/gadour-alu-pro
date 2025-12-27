@@ -144,7 +144,8 @@ window.switchMode = function(m) {
 window.toggleFixOption = function() {
     const p = document.getElementById('productType').value;
     const container = document.getElementById('fixOptionContainer');
-    if (p.includes('ouvrant') || p.includes('beb')) { container.style.display = 'flex'; } 
+    // CORRECTION : Pas de Fixe pour le Beb 1V
+    if (p.includes('ouvrant') && !p.includes('beb')) { container.style.display = 'flex'; } 
     else { container.style.display = 'none'; document.getElementById('hasFix').checked = false; toggleFixInput(); }
 }
 window.toggleFixInput = function() { document.getElementById('fixInputWrapper').style.display = document.getElementById('hasFix').checked ? 'flex' : 'none'; }
@@ -207,7 +208,9 @@ function generateCutData(calculateMetersOnly = false) {
             if (is2V || profilOuvrant !== "p_40404") { addPiece("p_40166", hFarda - 11, (is2V ? 4 : 2) * Q); addPiece("p_40166", wFarda - 11, (is2V ? 4 : 2) * Q); }
             if (!is2V) addPiece("p_40107", (hFarda - 29.2) / 2, 2 * Q);
         } else if(it.product === "beb1v") {
-            addPiece("p_40402", H+7, 2*Q); addPiece("p_40402", L+7, 1*Q); addPiece("p_40100", finalH-2.5, 2*Q); addPiece("p_40100", finalL-4.2, 1*Q); addPiece("p_40166", finalL-11, 4*Q); addPiece("p_40166", ((finalH-2.5)-12.5)/2-4, 4*Q); addPiece("p_40121", finalL-9.8, 1*Q); addPiece("p_40154", finalL-9.8, 1*Q);
+            // CORRECTION PORTE: H + 3.5 (Pas 7) | L + 7
+            addPiece("p_40402", finalH + 3.5, 2*Q); addPiece("p_40402", finalL + 7, 1*Q); 
+            addPiece("p_40100", finalH-2.5, 2*Q); addPiece("p_40100", finalL-4.2, 1*Q); addPiece("p_40166", finalL-11, 4*Q); addPiece("p_40166", ((finalH-2.5)-12.5)/2-4, 4*Q); addPiece("p_40121", finalL-9.8, 1*Q); addPiece("p_40154", finalL-9.8, 1*Q);
         } else if(it.product.includes("store")) {
             let w = (it.product==="store_apparent") ? L-3 : L+5;
             addPiece("p_Glissiere", H+5, 2*Q); addPiece("p_Lame55", w, Math.floor(H/5.5)*Q); addPiece("p_Lame_Finale", w, 1*Q); addPiece("p_Axe_Store", w, 1*Q);
@@ -266,7 +269,7 @@ window.calculateTotalDevis = function() {
             mat.a_Ecer_Danimo_P += 4*Q; // CADRE SEULEMENT
         } else if (it.product.includes("ouvrant")) {
             let is2V = it.product.includes("2v");
-            mat.a_Ecer_Danimo_P += 4 * Q; // CADRE
+            mat.a_Ecer_Danimo_P += 4 * Q; // CADRE (P Model)
             if (is2V) { mat.a_Paumelle += 4 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Danimo_G += 8 * Q; mat.a_Ecer_Font += 4 * Q; mat.a_Ecer_Tall_7did += 4 * Q; mat.a_Angle_Parclose += 8 * Q; mat.a_Bochon_112 += 2 * Q; mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((workingH + workingL) * 4 / 100) * Q; } 
             else { mat.a_Paumelle += 2 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 4 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; }
         } else if (it.product === "beb1v") {
