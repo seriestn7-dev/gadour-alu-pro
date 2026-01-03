@@ -227,13 +227,84 @@ function generateCutData(calculateMetersOnly = false) {
     return result;
 }
 
+// === CALCUL VITRAGE (NOUVEAU) ===
+function calculateVitrage() {
+    let vitrageList = []; // Array of {type, H_verre, L_verre, surface_m2, quantity}
+    const EPAISSEUR_TRAVERSE = 4.5;
+
+    for (const it of devis) {
+        const L = it.L_cm; const H = it.H_cm; const Q = it.Q;
+        let finalH = H; let finalL = L;
+
+        // Si fixe existe, calculer vitrage fixe
+        if(it.hasFix) {
+            let H_verre_fixe, L_verre_fixe;
+            if(it.fixPos === 'top' || it.fixPos === 'bottom') {
+                H_verre_fixe = it.fixSize - 2;
+                L_verre_fixe = L - 2;
+                finalH = H - it.fixSize - EPAISSEUR_TRAVERSE;
+            } else {
+                H_verre_fixe = H - 2;
+                L_verre_fixe = it.fixSize - 2;
+                finalL = L - it.fixSize - EPAISSEUR_TRAVERSE;
+            }
+            let surface_fixe = (H_verre_fixe * L_verre_fixe) / 10000; // cm² to m²
+            vitrageList.push({
+                type: "Fixe (" + it.productName + ")",
+                H_verre: H_verre_fixe,
+                L_verre: L_verre_fixe,
+                surface_m2: surface_fixe,
+                quantity: Q
+            });
+        }
+
+        // Calcul vitrage selon type de produit
+        if (it.product === "coulissant") {
+            let H_farda = H - 6.5;
+            let L_farda = (L - 15.5) / 2;
+            let H_verre = H_farda - 8.5;
+            let L_verre = L_farda - 1;
+            let surface = (H_verre * L_verre) / 10000;
+            vitrageList.push({
+                type: "Coulissant",
+                H_verre: H_verre,
+                L_verre: L_verre,
+                surface_m2: surface,
+                quantity: 2 * Q // 2 vantaux
+            });
+        } else if(it.product.includes("ouvrant")) {
+            let is2V = it.product.includes("2v");
+            let is40100 = it.product.includes("40100");
+            let reduction = is40100 ? 11 : 10;
+            
+            let H_farda = finalH - 4.2;
+            let L_farda = is2V ? ((finalL - 4.5) / 2) : (finalL - 4.2);
+            
+            let H_verre = H_farda - reduction;
+            let L_verre = L_farda - reduction;
+            let surface = (H_verre * L_verre) / 10000;
+            
+            vitrageList.push({
+                type: it.productName,
+                H_verre: H_verre,
+                L_verre: L_verre,
+                surface_m2: surface,
+                quantity: is2V ? (2 * Q) : Q
+            });
+        }
+        // Monobloc et Store n'ont pas de vitrage
+    }
+
+    return vitrageList;
+}
+
 window.calculateTotalDevis = function() {
     if (devis.length === 0) { alert("Panier Vide !"); return; }
     if(!isSubscribed) return alert("Abonnement expiré !");
 
     let cd = generateCutData(); 
     let html = '<h3>1. Profilés</h3><table><tr><th>Ref</th><th>Métrage Total</th><th>Barres</th></tr>';
-    let totalProfiles = 0; let totalAccessoires = 0; let totalVitrage = 0; let tot_surf = 0; 
+    let totalProfiles = 0; let totalAccessoires = 0; let totalVitrage = 0; 
     let avgColor = devis.reduce((sum, item) => sum + item.colorFactor, 0) / devis.length;
 
     for(let k in cd) { 
@@ -247,9 +318,10 @@ window.calculateTotalDevis = function() {
     html += `<tr><td colspan="3" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Profilés: ${totalProfiles.toFixed(3)} TND</td></tr>`;
     html += "</tbody></table>";
 
-    let mat = {}; let v_html = ""; const EPAISSEUR_TRAVERSE = 4.5;
+    let mat = {};
     for(let key in database) { if(key.startsWith('a_')) mat[key] = 0; }
 
+    const EPAISSEUR_TRAVERSE = 4.5;
     for (const it of devis) {
         const L = it.L_cm; const H = it.H_cm; const Q = it.Q;
         let workingH = H; let workingL = L;
@@ -263,10 +335,10 @@ window.calculateTotalDevis = function() {
             mat.a_Moteur_Store_40 += 1 * Q; mat.a_Tirant_Mono += (L > 120 ? 3 : 2) * Q; mat.a_Bochon_39 += Math.ceil((H - 10) / 3.9 / 2) * 2 * Q; mat.a_Joint_Brosse_5 += (L / 100) * Q; mat.a_Joint_Brosse_6 += ((H - 15.5) * 2 / 100) * Q; mat.a_Kit_Acc_Mono += 1 * Q; 
         } else if (it.product === "coulissant") {
             mat.a_Gallet += 4*Q; mat.a_Fermeture += 2*Q; mat.a_Gache_Fermeture += 2*Q; mat.a_Kit_Etancheite += 1*Q; mat.a_Joint_Brosse += ((((workingH-6.5)*2) + (workingH-6.5) + (((L-15.5)/2)*2)) / 100) * Q; mat.a_Ecer_67103 += 4*Q; 
-            mat.a_Ecer_Danimo_P += 4*Q; // CADRE SEULEMENT
+            mat.a_Ecer_Danimo_P += 4*Q;
         } else if (it.product.includes("ouvrant")) {
             let is2V = it.product.includes("2v");
-            mat.a_Ecer_Danimo_P += 4 * Q; // CADRE
+            mat.a_Ecer_Danimo_P += 4 * Q;
             if (is2V) { mat.a_Paumelle += 4 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Danimo_G += 8 * Q; mat.a_Ecer_Font += 4 * Q; mat.a_Ecer_Tall_7did += 4 * Q; mat.a_Angle_Parclose += 8 * Q; mat.a_Bochon_112 += 2 * Q; mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((workingH + workingL) * 4 / 100) * Q; } 
             else { mat.a_Paumelle += 2 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 4 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; }
         } else if (it.product === "beb1v") {
@@ -278,10 +350,31 @@ window.calculateTotalDevis = function() {
     for(let k in mat) { if(mat[k]>0) { let price = database[k] || 0; let cost = mat[k] * price; totalAccessoires += cost; html += `<tr><td>${k.replace('a_','')}</td><td>${mat[k].toFixed(2)}</td><td>${cost.toFixed(3)}</td></tr>`; } }
     html += `<tr><td colspan="3" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Accessoires: ${totalAccessoires.toFixed(3)} TND</td></tr></tbody></table>`;
     
-    // Calcul Vitrage (Simplifié pour affichage)
-    html += `<h3>3. Vitrage</h3><p>Calcul vitrage inclus dans total...</p>`;
+    // === CALCUL VITRAGE (NOUVEAU) ===
+    let vitrageData = calculateVitrage();
+    html += `<h3>3. Vitrage</h3>`;
+    if(vitrageData.length > 0) {
+        html += `<table><thead><tr><th>Type</th><th>Dimensions (cm)</th><th>Surface (m²)</th><th>Qté</th><th>Prix Total</th></tr></thead><tbody>`;
+        
+        for(let vd of vitrageData) {
+            let prixUnitaire = database['v_ballar'] || 45;
+            let costTotal = vd.surface_m2 * prixUnitaire * vd.quantity;
+            totalVitrage += costTotal;
+            html += `<tr>
+                <td>${vd.type}</td>
+                <td>${vd.H_verre.toFixed(1)} x ${vd.L_verre.toFixed(1)}</td>
+                <td>${vd.surface_m2.toFixed(3)}</td>
+                <td>${vd.quantity}</td>
+                <td>${costTotal.toFixed(3)} TND</td>
+            </tr>`;
+        }
+        
+        html += `<tr><td colspan="5" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Vitrage: ${totalVitrage.toFixed(3)} TND</td></tr></tbody></table>`;
+    } else {
+        html += `<p style="text-align:center; color:#999;">Aucun vitrage dans ce devis.</p>`;
+    }
 
-    let grandTotal = totalProfiles + totalAccessoires + (tot_surf * (database['v_ballar'] || 45));
+    let grandTotal = totalProfiles + totalAccessoires + totalVitrage;
     let margePercent = parseFloat(document.getElementById('margePercent').value) || 0;
     let finalTotal = grandTotal * (1 + margePercent/100);
 
@@ -295,7 +388,7 @@ window.calculateTotalDevis = function() {
 
 function drawWindowSVG(item) {
     const L = item.L_cm; const H = item.H_cm;
-    return `<div class="window-card"><h4>${item.productName}</h4><p>${L}x${H}</p></div>`; // Simplifié pour brevity
+    return `<div class="window-card"><h4>${item.productName}</h4><p>${L}x${H}</p></div>`;
 }
 
 function calculateDebit() {
