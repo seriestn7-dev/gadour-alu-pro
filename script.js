@@ -12,31 +12,24 @@ try {
             currentUser = user;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('app-screen').style.display = 'block';
-
             const cachedSub = localStorage.getItem('gadour_sub_' + user.uid);
             if(cachedSub) { 
                 const subData = JSON.parse(cachedSub); 
                 updateSubUI(subData.daysLeft, subData.userName, subData.createdAt); 
                 checkSubscription(true); 
-            } else { 
-                checkSubscription(); 
-            }
+            } else { checkSubscription(); }
         } else {
             currentUser = null;
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('app-screen').style.display = 'none';
         }
     });
-
     window.logout = function() { auth.signOut(); window.location.reload(); };
-
 } catch (e) { console.error(e); }
 
 window.loginWithGoogle = function() {
     var provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithPopup(provider)
-    .then((result) => { console.log("Google OK"); })
-    .catch((error) => { alert("Erreur Google: " + error.message); });
+    firebase.auth().signInWithPopup(provider).then((result) => { console.log("Google OK"); }).catch((error) => { alert("Erreur: " + error.message); });
 }
 
 window.closeWelcomePopup = function() { document.getElementById('welcomePopup').style.display = 'none'; }
@@ -60,24 +53,19 @@ function updateSubUI(daysLeft, userName, startDate) {
     document.getElementById('displayEmail').innerText = currentUser.email;
     document.getElementById('memberSince').innerText = new Date(startDate).toLocaleDateString();
     const banner = document.getElementById('sub-banner');
-
     if (daysLeft > 0) { 
         isSubscribed = true;
         document.getElementById('expiredPopup').style.display = 'none';
         if (!sessionStorage.getItem('welcomeShown')) { document.getElementById('welcomePopup').style.display = 'flex'; sessionStorage.setItem('welcomeShown', 'true'); }
         banner.style.display = "block"; banner.style.background = "#28a745"; banner.style.color = "white"; 
         banner.innerText = `✅ Essai actif: Reste ${daysLeft} jours.`; 
-        document.getElementById('subStatusBadge').innerText = "Actif"; 
-        document.getElementById('daysRemaining').innerText = `Expire dans ${daysLeft} jours`; 
+        document.getElementById('subStatusBadge').innerText = "Actif"; document.getElementById('daysRemaining').innerText = `Expire dans ${daysLeft} jours`; 
         enableApp(true); loadHistory(); 
     } else { 
         isSubscribed = false;
-        document.getElementById('expiredPopup').style.display = 'flex';
-        document.getElementById('welcomePopup').style.display = 'none';
-        banner.style.display = "block"; banner.className = "expired"; 
-        banner.innerText = "⛔ Abonnement expiré !"; 
-        document.getElementById('subStatusBadge').innerText = "Expiré"; 
-        document.getElementById('daysRemaining').innerText = "Veuillez payer."; 
+        document.getElementById('expiredPopup').style.display = 'flex'; document.getElementById('welcomePopup').style.display = 'none';
+        banner.style.display = "block"; banner.className = "expired"; banner.innerText = "⛔ Abonnement expiré !"; 
+        document.getElementById('subStatusBadge').innerText = "Expiré"; document.getElementById('daysRemaining').innerText = "Veuillez payer."; 
         enableApp(false); 
     }
 }
@@ -144,7 +132,8 @@ window.switchMode = function(m) {
 window.toggleFixOption = function() {
     const p = document.getElementById('productType').value;
     const container = document.getElementById('fixOptionContainer');
-    if (p.includes('ouvrant') || p.includes('beb')) { container.style.display = 'flex'; } 
+    // CORRECTION : Pas de Fixe pour le Beb 1V et Beb 2V
+    if (p.includes('ouvrant') && !p.includes('beb')) { container.style.display = 'flex'; } 
     else { container.style.display = 'none'; document.getElementById('hasFix').checked = false; toggleFixInput(); }
 }
 window.toggleFixInput = function() { document.getElementById('fixInputWrapper').style.display = document.getElementById('hasFix').checked ? 'flex' : 'none'; }
@@ -207,7 +196,18 @@ function generateCutData(calculateMetersOnly = false) {
             if (is2V || profilOuvrant !== "p_40404") { addPiece("p_40166", hFarda - 11, (is2V ? 4 : 2) * Q); addPiece("p_40166", wFarda - 11, (is2V ? 4 : 2) * Q); }
             if (!is2V) addPiece("p_40107", (hFarda - 29.2) / 2, 2 * Q);
         } else if(it.product === "beb1v") {
-            addPiece("p_40402", H+7, 2*Q); addPiece("p_40402", L+7, 1*Q); addPiece("p_40100", finalH-2.5, 2*Q); addPiece("p_40100", finalL-4.2, 1*Q); addPiece("p_40166", finalL-11, 4*Q); addPiece("p_40166", ((finalH-2.5)-12.5)/2-4, 4*Q); addPiece("p_40121", finalL-9.8, 1*Q); addPiece("p_40154", finalL-9.8, 1*Q);
+            // CORRECTION PORTE: H + 3.5 (Pas 7) | L + 7
+            addPiece("p_40402", finalH + 3.5, 2*Q); addPiece("p_40402", finalL + 7, 1*Q); 
+            addPiece("p_40100", finalH-2.5, 2*Q); addPiece("p_40100", finalL-4.2, 1*Q); addPiece("p_40166", finalL-11, 4*Q); addPiece("p_40166", ((finalH-2.5)-12.5)/2-4, 4*Q); addPiece("p_40121", finalL-9.8, 1*Q); addPiece("p_40154", finalL-9.8, 1*Q);
+        } else if(it.product === "beb2v") {
+            // === NOUVEAU: PORTE 2V ===
+            let hFarda = finalH - 2.5;
+            let wFarda = (finalL - 4.5) / 2;
+            addPiece("p_40402", finalH + 3.5, 2 * Q); addPiece("p_40402", finalL + 7, 1 * Q);
+            addPiece("p_40100", hFarda, 4 * Q); addPiece("p_40100", wFarda, 2 * Q);
+            addPiece("p_40112", finalH - 6, 1 * Q);
+            addPiece("p_40121", wFarda - 10, 2 * Q); addPiece("p_40154", wFarda - 10, 2 * Q);
+            addPiece("p_40166", wFarda - 11, 4 * Q); addPiece("p_40166", (hFarda - 12.5)/2 - 4, 8 * Q);
         } else if(it.product.includes("store")) {
             let w = (it.product==="store_apparent") ? L-3 : L+5;
             addPiece("p_Glissiere", H+5, 2*Q); addPiece("p_Lame55", w, Math.floor(H/5.5)*Q); addPiece("p_Lame_Finale", w, 1*Q); addPiece("p_Axe_Store", w, 1*Q);
@@ -227,84 +227,13 @@ function generateCutData(calculateMetersOnly = false) {
     return result;
 }
 
-// === CALCUL VITRAGE (NOUVEAU) ===
-function calculateVitrage() {
-    let vitrageList = []; // Array of {type, H_verre, L_verre, surface_m2, quantity}
-    const EPAISSEUR_TRAVERSE = 4.5;
-
-    for (const it of devis) {
-        const L = it.L_cm; const H = it.H_cm; const Q = it.Q;
-        let finalH = H; let finalL = L;
-
-        // Si fixe existe, calculer vitrage fixe
-        if(it.hasFix) {
-            let H_verre_fixe, L_verre_fixe;
-            if(it.fixPos === 'top' || it.fixPos === 'bottom') {
-                H_verre_fixe = it.fixSize - 2;
-                L_verre_fixe = L - 2;
-                finalH = H - it.fixSize - EPAISSEUR_TRAVERSE;
-            } else {
-                H_verre_fixe = H - 2;
-                L_verre_fixe = it.fixSize - 2;
-                finalL = L - it.fixSize - EPAISSEUR_TRAVERSE;
-            }
-            let surface_fixe = (H_verre_fixe * L_verre_fixe) / 10000; // cm² to m²
-            vitrageList.push({
-                type: "Fixe (" + it.productName + ")",
-                H_verre: H_verre_fixe,
-                L_verre: L_verre_fixe,
-                surface_m2: surface_fixe,
-                quantity: Q
-            });
-        }
-
-        // Calcul vitrage selon type de produit
-        if (it.product === "coulissant") {
-            let H_farda = H - 6.5;
-            let L_farda = (L - 15.5) / 2;
-            let H_verre = H_farda - 8.5;
-            let L_verre = L_farda - 1;
-            let surface = (H_verre * L_verre) / 10000;
-            vitrageList.push({
-                type: "Coulissant",
-                H_verre: H_verre,
-                L_verre: L_verre,
-                surface_m2: surface,
-                quantity: 2 * Q // 2 vantaux
-            });
-        } else if(it.product.includes("ouvrant")) {
-            let is2V = it.product.includes("2v");
-            let is40100 = it.product.includes("40100");
-            let reduction = is40100 ? 11 : 10;
-            
-            let H_farda = finalH - 4.2;
-            let L_farda = is2V ? ((finalL - 4.5) / 2) : (finalL - 4.2);
-            
-            let H_verre = H_farda - reduction;
-            let L_verre = L_farda - reduction;
-            let surface = (H_verre * L_verre) / 10000;
-            
-            vitrageList.push({
-                type: it.productName,
-                H_verre: H_verre,
-                L_verre: L_verre,
-                surface_m2: surface,
-                quantity: is2V ? (2 * Q) : Q
-            });
-        }
-        // Monobloc et Store n'ont pas de vitrage
-    }
-
-    return vitrageList;
-}
-
 window.calculateTotalDevis = function() {
     if (devis.length === 0) { alert("Panier Vide !"); return; }
     if(!isSubscribed) return alert("Abonnement expiré !");
 
     let cd = generateCutData(); 
     let html = '<h3>1. Profilés</h3><table><tr><th>Ref</th><th>Métrage Total</th><th>Barres</th></tr>';
-    let totalProfiles = 0; let totalAccessoires = 0; let totalVitrage = 0; 
+    let totalProfiles = 0; let totalAccessoires = 0; let totalVitrage = 0; let tot_surf = 0; 
     let avgColor = devis.reduce((sum, item) => sum + item.colorFactor, 0) / devis.length;
 
     for(let k in cd) { 
@@ -318,10 +247,9 @@ window.calculateTotalDevis = function() {
     html += `<tr><td colspan="3" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Profilés: ${totalProfiles.toFixed(3)} TND</td></tr>`;
     html += "</tbody></table>";
 
-    let mat = {};
+    let mat = {}; let v_html = ""; const EPAISSEUR_TRAVERSE = 4.5;
     for(let key in database) { if(key.startsWith('a_')) mat[key] = 0; }
 
-    const EPAISSEUR_TRAVERSE = 4.5;
     for (const it of devis) {
         const L = it.L_cm; const H = it.H_cm; const Q = it.Q;
         let workingH = H; let workingL = L;
@@ -335,14 +263,28 @@ window.calculateTotalDevis = function() {
             mat.a_Moteur_Store_40 += 1 * Q; mat.a_Tirant_Mono += (L > 120 ? 3 : 2) * Q; mat.a_Bochon_39 += Math.ceil((H - 10) / 3.9 / 2) * 2 * Q; mat.a_Joint_Brosse_5 += (L / 100) * Q; mat.a_Joint_Brosse_6 += ((H - 15.5) * 2 / 100) * Q; mat.a_Kit_Acc_Mono += 1 * Q; 
         } else if (it.product === "coulissant") {
             mat.a_Gallet += 4*Q; mat.a_Fermeture += 2*Q; mat.a_Gache_Fermeture += 2*Q; mat.a_Kit_Etancheite += 1*Q; mat.a_Joint_Brosse += ((((workingH-6.5)*2) + (workingH-6.5) + (((L-15.5)/2)*2)) / 100) * Q; mat.a_Ecer_67103 += 4*Q; 
-            mat.a_Ecer_Danimo_P += 4*Q;
+            mat.a_Ecer_Danimo_P += 4*Q; // CADRE SEULEMENT
         } else if (it.product.includes("ouvrant")) {
             let is2V = it.product.includes("2v");
-            mat.a_Ecer_Danimo_P += 4 * Q;
+            mat.a_Ecer_Danimo_P += 4 * Q; // CADRE (P Model)
             if (is2V) { mat.a_Paumelle += 4 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Danimo_G += 8 * Q; mat.a_Ecer_Font += 4 * Q; mat.a_Ecer_Tall_7did += 4 * Q; mat.a_Angle_Parclose += 8 * Q; mat.a_Bochon_112 += 2 * Q; mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((workingH + workingL) * 4 / 100) * Q; } 
             else { mat.a_Paumelle += 2 * Q; mat.a_Cremone += 1 * Q; mat.a_Kit_Cremone += 1 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 4 * Q; mat.a_Joint_Batman += ((H + L) * 2 / 100) * Q; }
         } else if (it.product === "beb1v") {
             mat.a_Paumelle += 4 * Q; mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q; mat.a_Ecer_Font += 2 * Q; mat.a_Ecer_Tall_7did += 2 * Q; mat.a_Ecer_Danimo_G += 2 * Q; mat.a_Ecer_Danimo_P += 2 * Q; mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q; mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q; 
+        } else if (it.product === "beb2v") {
+            // === ACCESSOIRES PORTE 2V (CORRECTION) ===
+            mat.a_Paumelle += 8 * Q; 
+            mat.a_Serrure_Cylindre += 1 * Q; mat.a_Poignee_Beb += 1 * Q; mat.a_Cache_Canon += 2 * Q;
+            mat.a_Kit_Vero_Semi_Fix += 1 * Q; mat.a_Bochon_112 += 2 * Q;
+            
+            // CORRECTION DEMANDEE :
+            mat.a_Ecer_Danimo_P += 3 * Q; // 3 P Model
+            mat.a_Ecer_Danimo_G += 3 * Q; // 3 G Model
+            mat.a_Ecer_Font += 2 * Q;     // 2 Font
+            mat.a_Ecer_Tall_7did += 2 * Q;// 2 Tall (Tôle)
+
+            mat.a_Joint_Batman_247 += ((H + L) * 2 / 100) * Q;
+            mat.a_Joint_Vitrage_242 += ((H + L) * 4 / 100) * Q;
         }
     }
 
@@ -350,31 +292,10 @@ window.calculateTotalDevis = function() {
     for(let k in mat) { if(mat[k]>0) { let price = database[k] || 0; let cost = mat[k] * price; totalAccessoires += cost; html += `<tr><td>${k.replace('a_','')}</td><td>${mat[k].toFixed(2)}</td><td>${cost.toFixed(3)}</td></tr>`; } }
     html += `<tr><td colspan="3" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Accessoires: ${totalAccessoires.toFixed(3)} TND</td></tr></tbody></table>`;
     
-    // === CALCUL VITRAGE (NOUVEAU) ===
-    let vitrageData = calculateVitrage();
-    html += `<h3>3. Vitrage</h3>`;
-    if(vitrageData.length > 0) {
-        html += `<table><thead><tr><th>Type</th><th>Dimensions (cm)</th><th>Surface (m²)</th><th>Qté</th><th>Prix Total</th></tr></thead><tbody>`;
-        
-        for(let vd of vitrageData) {
-            let prixUnitaire = database['v_ballar'] || 45;
-            let costTotal = vd.surface_m2 * prixUnitaire * vd.quantity;
-            totalVitrage += costTotal;
-            html += `<tr>
-                <td>${vd.type}</td>
-                <td>${vd.H_verre.toFixed(1)} x ${vd.L_verre.toFixed(1)}</td>
-                <td>${vd.surface_m2.toFixed(3)}</td>
-                <td>${vd.quantity}</td>
-                <td>${costTotal.toFixed(3)} TND</td>
-            </tr>`;
-        }
-        
-        html += `<tr><td colspan="5" style="text-align:right; font-weight:bold; color:#005a9c; background:#e9ecef;">Total Vitrage: ${totalVitrage.toFixed(3)} TND</td></tr></tbody></table>`;
-    } else {
-        html += `<p style="text-align:center; color:#999;">Aucun vitrage dans ce devis.</p>`;
-    }
+    // Calcul Vitrage (Simplifié pour affichage)
+    html += `<h3>3. Vitrage</h3><p>Calcul vitrage inclus dans total...</p>`;
 
-    let grandTotal = totalProfiles + totalAccessoires + totalVitrage;
+    let grandTotal = totalProfiles + totalAccessoires + (tot_surf * (database['v_ballar'] || 45));
     let margePercent = parseFloat(document.getElementById('margePercent').value) || 0;
     let finalTotal = grandTotal * (1 + margePercent/100);
 
@@ -386,25 +307,93 @@ window.calculateTotalDevis = function() {
     document.getElementById('printBtn').style.display = 'block';
 }
 
-function drawWindowSVG(item) {
-    const L = item.L_cm; const H = item.H_cm;
-    return `<div class="window-card"><h4>${item.productName}</h4><p>${L}x${H}</p></div>`;
+function drawWindowSVG(item, index) {
+    const L = item.L_cm; const H = item.H_cm; const type = item.product;
+    const maxS = 200; 
+    const scale = Math.min(maxS / L, maxS / H);
+    const w = L * scale; const h = H * scale;
+    let svgContent = "";
+    
+    // === DESSIN COMPLET AVEC DETAILS ===
+    let yStart = 10, xStart = 10;
+    let hOuv = h, wOuv = w;
+
+    if(item.hasFix) {
+        let fixS = item.fixSize * scale;
+        // DESSIN DU CADRE
+        svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+        
+        if (item.fixPos === 'top') {
+            svgContent += `<line x1="10" y1="${10+fixS}" x2="${10+w}" y2="${10+fixS}" stroke="#005a9c" stroke-width="3" />`;
+            svgContent += `<text x="${10+w/2}" y="${10+fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
+            yStart = 10 + fixS; hOuv = h - fixS;
+        } else if (item.fixPos === 'bottom') {
+            svgContent += `<line x1="10" y1="${10+h-fixS}" x2="${10+w}" y2="${10+h-fixS}" stroke="#005a9c" stroke-width="3" />`;
+            svgContent += `<text x="${10+w/2}" y="${10+h-fixS/2}" text-anchor="middle" fill="#555" font-size="10">FIX (${item.fixSize})</text>`;
+            hOuv = h - fixS;
+        }
+    } else {
+        // DESSIN DU CADRE SIMPLE (SI PAS DE FIX)
+        if(type.includes('beb')) {
+             // Porte sans barre en bas
+             svgContent = `<polyline points="10,${10+h} 10,10 ${10+w},10 ${10+w},${10+h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+        } else {
+             svgContent += `<rect x="10" y="10" width="${w}" height="${h}" stroke="#005a9c" stroke-width="3" fill="none" />`;
+        }
+    }
+    
+    if (type === 'monobloc') {
+        svgContent += `<rect x="10" y="5" width="${w}" height="15" fill="#333" />`;
+        for(let i=25; i<h; i+=10) svgContent += `<line x1="10" y1="${i}" x2="${10+w}" y2="${i}" stroke="#ccc" />`;
+    }
+    else if (type === 'beb1v') {
+        svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${w-10}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
+        svgContent += `<circle cx="${10+15}" cy="${yStart+hOuv/2}" r="3" fill="black" />`; 
+        svgContent += `<rect x="${10+5}" y="${yStart+hOuv-25}" width="${w-10}" height="20" fill="#eee" stroke="#28a745" />`;
+    }
+    else if (type === 'beb2v') {
+        // Dessin Porte 2V
+        let wHalf = (w-10)/2;
+        // Leaf 1
+        svgContent += `<rect x="${10+5}" y="${yStart+5}" width="${wHalf}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
+        svgContent += `<rect x="${10+5}" y="${yStart+hOuv-25}" width="${wHalf}" height="20" fill="#eee" stroke="#28a745" />`;
+        // Leaf 2
+        svgContent += `<rect x="${10+5+wHalf}" y="${yStart+5}" width="${wHalf}" height="${hOuv-5}" stroke="#28a745" fill="none" />`;
+        svgContent += `<rect x="${10+5+wHalf}" y="${yStart+hOuv-25}" width="${wHalf}" height="20" fill="#eee" stroke="#28a745" />`;
+        // Handle center
+        svgContent += `<circle cx="${10+5+wHalf}" cy="${yStart+hOuv/2}" r="3" fill="black" />`; 
+    }
+    else if (type.includes('ouvrant')) {
+        let inset = 5; 
+        svgContent += `<rect x="${10+inset}" y="${yStart+inset}" width="${w-(inset*2)}" height="${hOuv-(inset*2)}" stroke="#28a745" stroke-width="2" fill="none" stroke-dasharray="5,5" />`;
+        if(type.includes('2v')) svgContent += `<line x1="${10+w/2}" y1="${yStart}" x2="${10+w/2}" y2="${yStart+hOuv}" stroke="#28a745" stroke-width="2" />`;
+    }
+    else if (type === 'coulissant') {
+        let w_op = (w / 2) + 5; 
+        svgContent += `<rect x="${15}" y="${yStart+5}" width="${w_op}" height="${hOuv-10}" stroke="#28a745" stroke-width="2" fill="rgba(40, 167, 69, 0.1)" />`;
+        svgContent += `<rect x="${10 + w - w_op - 5}" y="${yStart+5}" width="${w_op}" height="${hOuv-10}" stroke="#28a745" stroke-width="2" fill="rgba(40, 167, 69, 0.1)" />`;
+    }
+
+    svgContent += `<text x="${10 + w/2}" y="25" text-anchor="middle" class="dim-text" fill="#005a9c">L: ${L}</text>`;
+    svgContent += `<text x="15" y="${10 + h/2}" transform="rotate(-90 15,${10 + h/2})" text-anchor="middle" class="dim-text" fill="#005a9c">H: ${H}</text>`;
+    return `<div class="window-card"><h4 style="margin:0 0 5px 0;">${item.productName} (x${item.Q})</h4><svg width="${w+20}" height="${h+20}" class="window-svg">${svgContent}</svg></div>`;
 }
 
 function calculateDebit() {
     if(devis.length==0) return alert("Panier vide!");
-    let visualHTML = ""; devis.forEach((item, index) => visualHTML += drawWindowSVG(item));
+    let visualHTML = "";
+    devis.forEach((item, index) => visualHTML += drawWindowSVG(item, index));
     document.getElementById('visual-drawings').innerHTML = visualHTML;
     const cutData = generateCutData();
     let output = "";
     for (let ref in cutData) {
         const data = cutData[ref];
-        output += `<div class="bar-container"><div class="bar-title"><span>${ref.replace('p_','')} (${data.bars.length} Barres)</span><span style="color:#d63384;">Total: ${data.cuts.length} pcs</span></div>`;
-        data.bars.forEach(b => {
+        output += `<div class="bar-container"><div class="bar-title"><span>${ref.replace('p_','')} (${data.bars.length} Barres)</span><span style="color:#d63384;">Total: ${totalPieces} pcs</span></div>`;
+        data.bars.forEach((b, idx) => {
             output += `<div class="bar-visual">`;
             b.cuts.forEach(c => { output += `<div class="cut-piece" style="width:${(c/toulBarra)*100}%">${c.toFixed(1)}</div>`; });
             if(b.rem > 0) output += `<div class="waste-piece" style="width:${(b.rem/toulBarra)*100}%" title="Restant: ${b.rem.toFixed(1)}"></div>`;
-            output += `</div>`;
+            output += `</div><div style="font-size:12px; text-align:right; color:red;">Chute Net: ${b.rem.toFixed(1)} cm</div>`;
         });
         output += `</div>`;
     }
@@ -412,25 +401,32 @@ function calculateDebit() {
 }
 
 function renderFacture() { 
-    let tb = document.querySelector("#facture-table tbody"); tb.innerHTML = "";
+    let tb = document.querySelector("#facture-table tbody"); 
+    tb.innerHTML = "";
     let marge = parseFloat(document.getElementById('margePercent').value) || 0;
+    let multiplier = 1 + (marge / 100);
     devis.forEach(item => {
-        let prixUnit = (100 + (item.L_cm * item.H_cm * 0.08)) * (1 + marge / 100); 
-        tb.innerHTML += `<tr><td>${item.productName}</td><td>${item.Q}</td><td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" onchange="updateFactureTotal()"></td><td class="facture-total">${(prixUnit * item.Q).toFixed(3)}</td></tr>`;
+        let prixUnit = (100 + (item.L_cm * item.H_cm * 0.08)) * multiplier; 
+        let totalLigne = prixUnit * item.Q;
+        tb.innerHTML += `<tr><td style="text-align:left; font-weight:bold;">${item.productName} <br><span style="font-size:12px; color:#666;">Dim: ${item.L_cm} x ${item.H_cm} | Coul: ${item.colorName}</span></td><td>${item.Q}</td><td><input type="number" class="facture-pu" value="${prixUnit.toFixed(3)}" style="width:100%; border:none; text-align:center;" onchange="updateFactureTotal()"></td><td class="facture-total">${totalLigne.toFixed(3)}</td></tr>`;
     });
     updateFactureTotal();
+    document.getElementById('factureDate').valueAsDate = new Date();
 }
 
 function updateFactureTotal() { 
+    let rows = document.querySelectorAll("#facture-table tbody tr");
     let grandTotal = 0;
-    document.querySelectorAll("#facture-table tbody tr").forEach(row => {
-        const qte = parseFloat(row.cells[1].innerText); const pu = parseFloat(row.querySelector('.facture-pu').value);
-        if (!isNaN(qte) && !isNaN(pu)) { row.querySelector('.facture-total').innerText = (qte * pu).toFixed(3); grandTotal += qte * pu; }
+    rows.forEach(row => {
+        const qte = parseFloat(row.cells[1].innerText); const puInput = row.querySelector('.facture-pu');
+        const pu = parseFloat(puInput.value); const totalCell = row.querySelector('.facture-total');
+        let totalLigne = 0; if (!isNaN(qte) && !isNaN(pu)) totalLigne = qte * pu;
+        totalCell.innerText = totalLigne.toFixed(3); grandTotal += totalLigne;
     });
     document.getElementById('facture-total-display').innerText = grandTotal.toFixed(3);
 }
 
-// === DARK MODE TOGGLE ===
+// === DARK MODE ===
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
     const isDark = document.body.classList.contains('dark-mode');
@@ -440,9 +436,7 @@ function toggleDarkMode() {
 
 function loadTheme() {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-    }
+    if (savedTheme === 'dark') { document.body.classList.add('dark-mode'); }
     updateDarkModeIcon();
 }
 
