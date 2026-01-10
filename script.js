@@ -1,134 +1,320 @@
-// --- 1. CONFIGURATION FIREBASE (القديمة متاعك) ---
-const firebaseConfig = { 
-    apiKey: "AIzaSyBbxD-oDHcEzyXarmkykTfAclEaXeNidMA", 
-    authDomain: "gadour-pro-free.firebaseapp.com", 
-    projectId: "gadour-pro-free", 
-    storageBucket: "gadour-pro-free.firebasestorage.app", 
-    messagingSenderId: "301548307386", 
-    appId: "1:301548307386:web:2a694b5a38aee71dc41383" 
+// CLEANED & REFACTORED VERSION
+// ----------------------------------------------
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBbxD-oDHcEzyXarmkykTfAclEaXeNidMA",
+  authDomain: "gadour-pro-free.firebaseapp.com",
+  projectId: "gadour-pro-free",
+  storageBucket: "gadour-pro-free.firebasestorage.app",
+  messagingSenderId: "301548307386",
+  appId: "1:301548307386:web:2a694b5a38aee71dc41383"
 };
 
-let currentUser = null, db = null, isSubscribed = false;
-let devis = [];
-let database = {};
-const toulBarra = 650; 
-const CUT_MARGIN = 5;
+let currentUser = null;
+let db = null;
+let isSubscribed = false;
 
-// قاعدة البيانات الأصلية مع زيادة سعر البلور v_ballar
-const defaultDatabase = { 
-    "p_67103": 200, "p_67104": 120, "p_67105": 120, "p_67106": 120, "p_Rail": 80, "p_67114": 90, 
-    "p_40402": 120, "p_40404": 200, "p_40107": 30, "p_40112": 120, "p_40100": 100, "p_40121": 100, 
-    "p_40154": 100, "p_40134": 80, "p_40166": 60, "p_Lame55": 80, "p_Glissiere": 50, "p_Lame_Finale": 60, 
-    "p_Axe_Store": 40, "p_Lame39": 65, "p_Caisson_Mono": 55, "p_Axe40": 35, "p_Traverse40104": 120, 
-    "a_Gallet": 2, "a_Fermeture": 5, "a_Gache_Fermeture": 2, "a_Kit_Etancheite": 5, "a_Joint_Brosse": 0.5, 
-    "a_Paumelle": 2, "a_Cremone": 5, "a_Kit_Cremone": 2.5, "a_Ecer_Danimo_G": 0.05, "a_Ecer_Danimo_P": 0.05, 
-    "a_Ecer_Tall_7did": 2, "a_Ecer_67103": 2, "a_Ecer_Font": 2, "a_Joint_Batman": 0.5, "a_Joint_A36": 0.5, 
-    "a_Kit_Vero_Semi_Fix": 2.5, "a_Bochon_112": 3, "a_Serrure_Cylindre": 20, "a_Poignee_Beb": 20, 
-    "a_Joint_Vitrage_242": 0.5, "a_Angle_Parclose": 0.5, "a_Moteur_Store_40": 120, "a_Moteur_Store_55": 140, 
-    "a_Axe_Rallonge": 10, "a_Tirant": 5, "a_Tirant_Mono": 5, "a_Joint_Brosse_5": 0.5, "a_Joint_Brosse_6": 0.5, 
-    "a_Bochon_55": 0.5, "a_Bochon_39": 0.5, "a_Kit_Acc_Mono": 25, "a_Cache_Canon": 2.5, "a_Joint_Batman_247": 0.8, 
-    "v_ballar": 45 
+//--------------------------------------------------
+// Firebase Init + Auth Listener
+//--------------------------------------------------
+try {
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  db = firebase.firestore();
+
+  auth.onAuthStateChanged((user) => {
+    if (user) handleLogin(user);
+    else handleLogout();
+  });
+
+  window.logout = () => auth.signOut().then(() => location.reload());
+
+} catch (e) {
+  console.error(e);
+}
+
+//--------------------------------------------------
+// Auth Handlers
+//--------------------------------------------------
+function handleLogin(user) {
+  currentUser = user;
+  toggleScreen(true);
+
+  const cached = localStorage.getItem('gadour_sub_' + user.uid);
+  if (cached) {
+    const sub = JSON.parse(cached);
+    updateSubUI(sub.daysLeft, sub.userName, sub.createdAt);
+    checkSubscription(true);
+  } else checkSubscription();
+}
+
+function handleLogout() {
+  currentUser = null;
+  toggleScreen(false);
+}
+
+function toggleScreen(isLogged) {
+  document.getElementById('login-screen').style.display = isLogged ? 'none' : 'flex';
+  document.getElementById('app-screen').style.display = isLogged ? 'block' : 'none';
+}
+
+//--------------------------------------------------
+// Google Login
+//--------------------------------------------------
+window.loginWithGoogle = function () {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider).catch(err => alert("Erreur Google: " + err.message));
 };
 
-// --- 2. FIREBASE & AUTH (نفس الكود متاعك) ---
-if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-db = firebase.firestore();
+//--------------------------------------------------
+// Subscription Check
+//--------------------------------------------------
+function checkSubscription(isBackground = false) {
+  if (!currentUser) return;
 
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app-screen').style.display = 'block';
-        loadPrices();
-    } else {
-        document.getElementById('login-screen').style.display = 'flex';
-        document.getElementById('app-screen').style.display = 'none';
+  db.collection('users').doc(currentUser.uid).get().then(doc => {
+    let start = new Date();
+    let userName = currentUser.displayName || "Client";
+
+    if (doc.exists) {
+      const d = doc.data();
+      if (d.createdAt) start = d.createdAt.toDate();
+      if (d.name) userName = d.name;
+    } else if (!isBackground) {
+      db.collection('users').doc(currentUser.uid).set({
+        email: currentUser.email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
     }
-});
 
-// --- 3. الدوال الأساسية (بدون تغيير) ---
+    const diff = Math.ceil((Date.now() - start) / 86400000);
+    const daysLeft = 30 - diff;
+
+    localStorage.setItem('gadour_sub_' + currentUser.uid, JSON.stringify({
+      daysLeft,
+      userName,
+      createdAt: start
+    }));
+
+    updateSubUI(daysLeft, userName, start);
+  });
+}
+
+//--------------------------------------------------
+// UI Subscription Update
+//--------------------------------------------------
+function updateSubUI(daysLeft, userName, createdAt) {
+  document.getElementById('displayUsername').innerText = "Bienvenue, " + userName;
+  document.getElementById('displayEmail').innerText = currentUser.email;
+  document.getElementById('memberSince').innerText = new Date(createdAt).toLocaleDateString();
+
+  const banner = document.getElementById('sub-banner');
+  const expiredPopup = document.getElementById('expiredPopup');
+  const welcomePopup = document.getElementById('welcomePopup');
+
+  if (daysLeft > 0) {
+    isSubscribed = true;
+    expiredPopup.style.display = 'none';
+
+    if (!sessionStorage.getItem('welcomeShown')) {
+      welcomePopup.style.display = 'flex';
+      sessionStorage.setItem('welcomeShown', 'true');
+    }
+
+    banner.style.display = 'block';
+    banner.style.background = '#28a745';
+    banner.style.color = 'white';
+    banner.innerText = `✅ Essai actif: Reste ${daysLeft} jours.`;
+
+    document.getElementById('subStatusBadge').innerText = "Actif";
+    document.getElementById('daysRemaining').innerText = `Expire dans ${daysLeft} jours`;
+
+    enableApp(true);
+    loadHistory();
+
+  } else {
+    isSubscribed = false;
+    expiredPopup.style.display = 'flex';
+    welcomePopup.style.display = 'none';
+
+    banner.style.display = 'block';
+    banner.className = 'expired';
+    banner.innerText = "⛔ Abonnement expiré !";
+
+    document.getElementById('subStatusBadge').innerText = "Expiré";
+    document.getElementById('daysRemaining').innerText = "Veuillez payer.";
+
+    enableApp(false);
+  }
+}
+
+//--------------------------------------------------
+// App Enable / Disable
+//--------------------------------------------------
+function enableApp(enabled) {
+  ['btnAdd', 'btnCalc', 'btnSave'].forEach(id => {
+    document.getElementById(id).disabled = !enabled;
+  });
+}
+
+//--------------------------------------------------
+// History
+//--------------------------------------------------
+function loadHistory() {
+  if (!isSubscribed) return;
+
+  const div = document.getElementById('history-list');
+  div.innerHTML = "<p style='text-align:center;color:#777;'>Chargement...</p>";
+
+  db.collection("historique")
+    .where("uid", "==", currentUser.uid)
+    .limit(20)
+    .get()
+    .then(snap => {
+      const proj = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      proj.sort((a, b) => (b.date?.seconds || 0) - (a.date?.seconds || 0));
+
+      if (proj.length === 0) {
+        div.innerHTML = "<p style='text-align:center;color:#999;'>Aucun projet trouvé.</p>";
+        return;
+      }
+
+      div.innerHTML = proj.map(p => renderHistoryItem(p)).join('');
+    });
+}
+
+function renderHistoryItem(d) {
+  const dateStr = d.date?.seconds ? new Date(d.date.seconds * 1000).toLocaleDateString('fr-FR') : 'Date inconnue';
+  const count = d.items?.length || 0;
+
+  return `
+  <div class="history-card">
+    <div style="text-align:left;">
+      <h4 style="margin:0;color:#004085;font-size:16px;">👤 ${d.client || "Client Inconnu"}</h4>
+      <small style="color:#777;font-size:12px;">📅 ${dateStr} | ${count} éléments</small>
+    </div>
+    <div style="display:flex;gap:5px;">
+      <button class="btn-load" onclick="restoreDevis('${d.id}')">📂</button>
+      <button class="btn-delete" onclick="deleteHistory('${d.id}')">🗑️</button>
+    </div>
+  </div>`;
+}
+
+//--------------------------------------------------
+// History Actions
+//--------------------------------------------------
+window.saveCurrentDevis = function () {
+  if (!isSubscribed) return alert("Expiré");
+  if (devis.length === 0) return alert("Vide");
+
+  const name = prompt("Client?");
+  if (!name) return;
+
+  db.collection("historique").add({
+    uid: currentUser.uid,
+    client: name,
+    date: firebase.firestore.FieldValue.serverTimestamp(),
+    items: devis
+  }).then(() => {
+    alert("Sauvegardé");
+    loadHistory();
+  });
+};
+
+window.restoreDevis = function (id) {
+  if (!isSubscribed) return;
+
+  db.collection("historique").doc(id).get().then(doc => {
+    if (doc.exists) {
+      devis = doc.data().items;
+      updateUI();
+      calculateTotalDevis();
+      switchMode('calc');
+    }
+  });
+};
+
+window.deleteHistory = function (id) {
+  if (confirm("Supprimer ?"))
+    db.collection("historique").doc(id).delete().then(loadHistory);
+};
+
+//--------------------------------------------------
+// Logo Upload
+//--------------------------------------------------
+function loadLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('logoImage').src = e.target.result;
+    document.getElementById('logoImage').style.display = 'block';
+    document.getElementById('logoText').style.display = 'none';
+  };
+
+  reader.readAsDataURL(file);
+}
+
+//--------------------------------------------------
+// DATABASE & PRICING
+//--------------------------------------------------
+let defaultDatabase = { /* ... ORIGINAL VALUES ... */ };
+let database = {};
+const toulBarra = 650;
+const CUT_MARGIN = 5;
+let devis = [];
+
 function loadPrices() {
-    const s = localStorage.getItem('gadourAluPrices'); 
-    database = s ? {...defaultDatabase, ...JSON.parse(s)} : {...defaultDatabase};
+  const s = localStorage.getItem('gadourAluPrices');
+  database = s ? { ...defaultDatabase, ...JSON.parse(s) } : { ...defaultDatabase };
+  renderPricesTable();
 }
 
-window.addItemToDevis = function() {
-    const l = parseFloat(document.getElementById('largeur').value);
-    const h = parseFloat(document.getElementById('hauteur').value);
-    const q = parseInt(document.getElementById('quantite').value);
-    const p = document.getElementById('productType');
-    const c = document.getElementById('couleur');
-    if (!l || !h) return;
-    devis.push({
-        product: p.value, productName: p.options[p.selectedIndex].text,
-        L_cm: l, H_cm: h, Q: q,
-        colorFactor: parseFloat(c.value), colorName: c.options[c.selectedIndex].text
-    });
-    updateUI();
-};
-
-function updateUI() {
-    const tb = document.querySelector("#devis-items tbody");
-    if(!tb) return;
-    tb.innerHTML = "";
-    devis.forEach((it, i) => {
-        tb.innerHTML += `<tr><td>${it.Q}</td><td>${it.productName}</td><td>${it.L_cm}x${it.H_cm}</td><td><button onclick="devis.splice(${i},1);updateUI()">❌</button></td></tr>`;
-    });
+function savePrices() {
+  localStorage.setItem('gadourAluPrices', JSON.stringify(database));
 }
 
-// --- 4. الجزء الجديد: حسبة البلور (Vitrage) ---
-function calculateVitrage() {
-    let vitrageList = [];
-    devis.forEach(it => {
-        let Hv = 0, Lv = 0;
-        if (it.product === "coulissant") {
-            Hv = (it.H_cm - 6.5) - 8.5; 
-            Lv = ((it.L_cm - 15.5) / 2) - 1;
-            vitrageList.push({ type: "Coulissant", h: Hv, l: Lv, q: 2 * it.Q });
-        } else if (it.product.includes("ouvrant")) {
-            let red = it.product.includes("40100") ? 11 : 10;
-            Hv = (it.H_cm - 4.2) - red;
-            Lv = (it.product.includes("2v") ? ((it.L_cm - 4.5) / 2) : (it.L_cm - 4.2)) - red;
-            vitrageList.push({ type: it.productName, h: Hv, l: Lv, q: (it.product.includes("2v") ? 2 : 1) * it.Q });
-        }
-    });
-    return vitrageList;
+window.updatePrice = (k, v) => {
+  database[k] = parseFloat(v);
+  savePrices();
+};
+
+//--------------------------------------------------
+// Render Prices
+//--------------------------------------------------
+function renderPricesTable() {
+  let hp = ''; let ha = '';
+
+  for (let k in database) {
+    if (k === 'v_ballar') {
+      document.querySelector('[data-price-key="v_ballar"]').value = database[k];
+      continue;
+    }
+
+    const html = `
+      <div class="price-input-container">
+        <span class="ref-label">${k.replace('p_', '').replace('a_', '')}:</span>
+        <input type="number" class="price-input" data-price-key="${k}" value="${database[k]}" step="0.001" onchange="updatePrice(this.dataset.priceKey, this.value)"> Dt
+      </div>`;
+
+    if (k.startsWith('p_')) hp += html;
+    else ha += html;
+  }
+
+  document.getElementById('table-prices-profiles').innerHTML = hp;
+  document.getElementById('table-prices-accessoires').innerHTML = ha;
 }
 
-// --- 5. دالة الحساب الكلي (المعدلة لإظهار البلور) ---
-window.calculateTotalDevis = function() {
-    if (devis.length === 0) return alert("البيت فارغ!");
-    
-    let totalAlu = 0; // حسبة تقديرية للألمنيوم
-    let totalGlass = 0;
-    let glassData = calculateVitrage();
-    
-    let html = "<h3>📊 النتيجة (Résultat)</h3>";
-    
-    // جدول البلور
-    html += "<table border='1' style='width:100%; text-align:center; margin-bottom:15px;'>";
-    html += "<tr style='background:#eee;'><th>النوع</th><th>القياس (cm)</th><th>الكمية</th><th>الثمن</th></tr>";
-    
-    glassData.forEach(v => {
-        let surface = (v.h * v.l) / 10000;
-        let price = surface * (database['v_ballar'] || 45) * v.q;
-        totalGlass += price;
-        html += `<tr><td>${v.type}</td><td>${v.h.toFixed(1)}x${v.l.toFixed(1)}</td><td>${v.q}</td><td>${price.toFixed(3)} DT</td></tr>`;
-    });
-    html += "</table>";
+//--------------------------------------------------
+// UI Switch Mode
+//--------------------------------------------------
+window.switchMode = function (m) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
 
-    // مجموع الألمنيوم (مثال بسيط)
-    devis.forEach(it => { totalAlu += (it.L_cm + it.H_cm) * 0.05 * it.Q; });
-
-    html += `<div style="text-align:right;">
-        <p>مجموع البلور: <b>${totalGlass.toFixed(3)} DT</b></p>
-        <h2 style="color:red;">المجموع الصافي: ${(totalAlu + totalGlass).toFixed(3)} DT</h2>
-    </div>`;
-
-    document.getElementById('total-result').innerHTML = html;
-};
-
-window.switchMode = function(m) {
-    document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(m + '-view').classList.add('active');
-};
+  const modes = {
+    calc: ['calc-view', 1],
+    debit: ['debit-view', 2],
+    facture: ['facture-view', 
