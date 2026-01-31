@@ -167,3 +167,4 @@ function printFacture() {
 }
 
 // استكمل بقية الدوال الخاصة بك هنا (calculate, drawWindow, etc.)
+
