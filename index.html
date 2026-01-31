@@ -87,7 +87,12 @@
             <button class="nav-btn" onclick="switchMode('facture')">📄 Facture</button>
             <button class="nav-btn" onclick="switchMode('profile')">👤 Mon Espace</button>
             <button class="nav-btn" onclick="switchMode('prices')">⚙️ Prix</button>
-            
+         <div id="admin-panel" class="mode-section" style="display:none; border: 2px solid #ffc107; padding: 15px; margin-top: 20px;">
+    <h2 style="color: #ffc107;">🛠️ لوحة تحكم الأدمن</h2>
+    <div id="users-list">
+        <p>جاري تحميل قائمة المستخدمين...</p>
+    </div>
+</div>   
             <button id="darkModeBtn" class="nav-btn" onclick="toggleDarkMode()" style="background:#444; border-color:#666;">🌙 Mode Nuit</button>
             
             <button class="nav-btn" onclick="logout()" style="background:#dc3545; float:right;">Déconnexion</button>
@@ -204,3 +209,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
