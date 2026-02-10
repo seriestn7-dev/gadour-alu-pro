@@ -1,98 +1,126 @@
-// ===============================
-// Gadour Alu – Refactored SAFE VERSION
-// ⚠️ LOGIQUE DE CALCUL 100% INCHANGÉE
-// Nettoyage + organisation seulement
-// ===============================
-
-/********************
- * 1. HELPERS UI
- ********************/
+/*************************
+ * HELPERS
+ *************************/
 function $(id){ return document.getElementById(id); }
-function num(id){ return parseFloat($(id).value); }
-function int(id){ return parseInt($(id).value); }
-function show(id){ $(id).style.display='block'; }
-function hide(id){ $(id).style.display='none'; }
 
-/********************
- * 2. AUTH / FIREBASE (INCHANGÉ)
- ********************/
-const firebaseConfig = { apiKey: "AIzaSyBbxD-oDHcEzyXarmkykTfAclEaXeNidMA", authDomain: "gadour-pro-free.firebaseapp.com", projectId: "gadour-pro-free", storageBucket: "gadour-pro-free.firebasestorage.app", messagingSenderId: "301548307386", appId: "1:301548307386:web:2a694b5a38aee71dc41383" };
-let currentUser=null, db=null, isSubscribed=false;
-firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth(); db=firebase.firestore();
+/*************************
+ * GLOBALS (INCHANGÉ)
+ *************************/
+let devis = [];
+const toulBarra = 650;
+const CUT_MARGIN = 5;
 
-auth.onAuthStateChanged(user=>{
-  if(user){ currentUser=user; hide('login-screen'); show('app-screen'); checkSubscription(); }
-  else{ show('login-screen'); hide('app-screen'); }
-});
-
-window.loginWithGoogle=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-window.logout=()=>auth.signOut().then(()=>location.reload());
-
-/********************
- * 3. DATA (INCHANGÉ)
- ********************/
-let devis=[];
-const toulBarra=650;
-const CUT_MARGIN=5;
-
-/********************
- * 4. UI LOGIC (SAFE)
- ********************/
-window.switchMode=function(m){
- document.querySelectorAll('.mode-section').forEach(s=>s.classList.remove('active'));
- $(m+'-view').classList.add('active');
+/*************************
+ * UI
+ *************************/
+window.toggleFixOption = function(){
+  const p = $('productType').value;
+  if(p.includes('ouvrant') || p.includes('beb')){
+    $('fixOptionContainer').style.display = 'flex';
+  }else{
+    $('fixOptionContainer').style.display = 'none';
+    $('hasFix').checked = false;
+    $('fixInputWrapper').style.display = 'none';
+  }
 }
 
-window.toggleFixOption=function(){
- const p=$('productType').value;
- if(p.includes('ouvrant')||p.includes('beb')) show('fixOptionContainer');
- else{ hide('fixOptionContainer'); $('hasFix').checked=false; hide('fixInputWrapper'); }
+window.toggleFixInput = function(){
+  $('fixInputWrapper').style.display = $('hasFix').checked ? 'flex' : 'none';
 }
 
-window.toggleFixInput=()=> $('fixInputWrapper').style.display=$('hasFix').checked?'flex':'none';
+/*************************
+ * ADD ITEM (FIXÉ)
+ *************************/
+window.addItemToDevis = function(){
+  const productSelect = $('productType');
+  const colorSelect   = $('couleur');
 
-/********************
- * 5. ADD ITEM (SAME DATA)
- ********************/
-window.addItemToDevis=function(){
- if(!isSubscribed) return alert('Expiré');
- const L=num('largeur'), H=num('hauteur'), Q=int('quantite');
- if(L<=0||H<=0||Q<=0) return alert('Valeurs invalides');
- const hasFix=$('hasFix').checked;
- let fs=0, fp='bottom';
- if(hasFix){ fs=num('fixSize'); fp=$('fixPosition').value; }
- devis.push({
-  product:productType.value,
-  productName:productType.options[productType.selectedIndex].text,
-  L_cm:L,H_cm:H,Q:Q,
-  colorFactor:parseFloat(couleur.value),
-  colorName:couleur.options[couleur.selectedIndex].text,
-  hasFix:hasFix,fixSize:fs,fixPos:fp
- });
- updateUI();
+  const L = parseFloat($('largeur').value);
+  const H = parseFloat($('hauteur').value);
+  const Q = parseInt($('quantite').value);
+
+  if(isNaN(L) || isNaN(H) || isNaN(Q) || L<=0 || H<=0 || Q<=0){
+    alert('قِيَم غير صحيحة');
+    return;
+  }
+
+  const hasFix = $('hasFix').checked;
+  let fixSize = 0;
+  let fixPos  = 'bottom';
+
+  if(hasFix){
+    fixSize = parseFloat($('fixSize').value);
+    fixPos  = $('fixPosition').value;
+
+    if(
+      (fixPos === 'top' || fixPos === 'bottom') && fixSize >= H ||
+      (fixPos === 'left' || fixPos === 'right') && fixSize >= L
+    ){
+      alert('Erreur Fixe');
+      return;
+    }
+  }
+
+  devis.push({
+    product: productSelect.value,
+    productName: productSelect.options[productSelect.selectedIndex].text,
+
+    L_cm: L,
+    H_cm: H,
+    Q: Q,
+
+    colorFactor: parseFloat(colorSelect.value),
+    colorName: colorSelect.options[colorSelect.selectedIndex].text,
+
+    hasFix: hasFix,
+    fixSize: fixSize,
+    fixPos: fixPos
+  });
+
+  updateUI();
 }
 
+/*************************
+ * UPDATE TABLE
+ *************************/
 function updateUI(){
- const tb=document.querySelector('#devis-items tbody'); tb.innerHTML='';
- devis.forEach((it,i)=>{
-  tb.innerHTML+=`<tr><td>${it.Q}</td><td>${it.productName}</td><td>${it.colorName}</td><td>${it.L_cm}x${it.H_cm}</td><td>${it.hasFix?'Fix':''}</td><td><button onclick="devis.splice(${i},1);updateUI()">X</button></td></tr>`;
- });
+  const tbody = document.querySelector('#devis-items tbody');
+  tbody.innerHTML = '';
+
+  devis.forEach((it, i)=>{
+    const fixTxt = it.hasFix ? `Fix ${it.fixPos} (${it.fixSize})` : '-';
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${it.Q}</td>
+        <td>${it.productName}</td>
+        <td>${it.colorName}</td>
+        <td>${it.L_cm} x ${it.H_cm}</td>
+        <td>${fixTxt}</td>
+        <td>
+          <button style="color:red" onclick="devis.splice(${i},1);updateUI()">X</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
-window.clearDevis=()=>{ if(confirm('Vider ?')){ devis=[]; updateUI(); $('total-result').innerHTML=''; } };
+window.clearDevis = function(){
+  if(confirm('Vider ?')){
+    devis = [];
+    updateUI();
+    $('total-result').innerHTML = '';
+  }
+}
 
-/********************
- * 6. 🔒 CALCULS – COPIE STRICTE
- * ⚠️ RIEN MODIFIÉ CI-DESSOUS
- ********************/
+/********************************************************
+ * ⛔⛔⛔
+ * من هنا لتحت ❌ ما تمسّش ❌
+ * خلي حساباتك الأصلية كيما راهي
+ ********************************************************/
 
-// ⛔⛔⛔ TOUT CE QUI SUIT EST IDENTIQUE À TON SCRIPT ORIGINAL
 // generateCutData()
 // calculateTotalDevis()
-// drawWindowSVG()
 // calculateDebit()
+// drawWindowSVG()
 // renderFacture()
-
-// 👉 COLLE ICI TES FONCTIONS DE CALCUL TELLES QUELLES
-
